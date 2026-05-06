@@ -7,12 +7,12 @@ Simulador de combates por turnos estilo Pokémon con agentes de Inteligencia Art
 ## Requisitos del sistema
 
 - Python 3.10 o superior
-- Sistema operativo Linux (probado en Debian/Ubuntu)
+- Windows 10/11 o Linux (Debian/Ubuntu y derivados)
 - Conexión a internet solo para la instalación de dependencias
 
 ---
 
-## Instalación paso a paso
+## Instalación
 
 ### 1. Clonar el repositorio
 
@@ -21,7 +21,11 @@ git clone https://github.com/Sergio-Osorio09/PokeFisi.git
 cd PokeFisi
 ```
 
-### 2. Instalar dependencias del sistema para pygame
+---
+
+### 2. Instalar dependencias del sistema
+
+#### Linux (Debian/Ubuntu)
 
 pygame necesita las bibliotecas SDL2 instaladas en el sistema. Ejecuta esto **una sola vez**:
 
@@ -30,71 +34,129 @@ sudo apt update
 sudo apt install -y python3-pip python3-venv libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
 ```
 
-> Si ya tienes `python3-pip` y `python3-venv` instalados puedes omitir el `apt update` y solo instalar las dependencias SDL2.
+#### Windows
+
+En Windows no se necesitan dependencias adicionales del sistema. Solo asegúrate de tener Python instalado con la opción **"Add Python to PATH"** marcada durante la instalación. Puedes descargarlo desde:
+
+```
+https://www.python.org/downloads/
+```
+
+---
 
 ### 3. Crear el entorno virtual
 
-Un entorno virtual aísla las dependencias del proyecto del resto del sistema. Créalo dentro de la carpeta del proyecto:
+Un entorno virtual aísla las dependencias del proyecto del resto del sistema.
+
+#### Linux
 
 ```bash
 python3 -m venv venv
 ```
 
+#### Windows
+
+```cmd
+python -m venv venv
+```
+
 Esto genera una carpeta llamada `venv/` con una instalación de Python independiente.
+
+---
 
 ### 4. Activar el entorno virtual
 
-Cada vez que abras una nueva terminal debes activar el entorno antes de usar el proyecto:
+Cada vez que abras una nueva terminal debes activar el entorno antes de usar el proyecto.
+
+#### Linux
 
 ```bash
 source venv/bin/activate
 ```
 
-Sabrás que está activo porque el prompt de la terminal mostrará `(venv)` al inicio:
+#### Windows (CMD)
+
+```cmd
+venv\Scripts\activate.bat
+```
+
+#### Windows (PowerShell)
+
+```powershell
+venv\Scripts\Activate.ps1
+```
+
+> Si PowerShell muestra un error de permisos al activar, ejecuta primero:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+> ```
+
+Sabrás que el entorno está activo porque el prompt mostrará `(venv)` al inicio:
 
 ```
-(venv) usuario@maquina:~/PokeFisi$
+(venv) usuario@maquina:~/PokeFisi$       ← Linux
+(venv) C:\Users\usuario\PokeFisi>        ← Windows
 ```
+
+---
 
 ### 5. Instalar las dependencias de Python
 
 Con el entorno virtual activo, instala las librerías necesarias:
 
+#### Linux
+
 ```bash
 pip install -r requirements.txt
 ```
 
-Esto instala `pygame` y `pytest`. El proceso tarda aproximadamente un minuto dependiendo de la conexión.
+#### Windows
+
+```cmd
+pip install -r requirements.txt
+```
+
+El comando es igual en ambos sistemas. El proceso tarda aproximadamente un minuto dependiendo de la conexión.
 
 ---
 
 ## Ejecutar el juego
 
-Asegúrate de tener el entorno virtual activo (`source venv/bin/activate`) antes de ejecutar cualquiera de estos comandos.
+Asegúrate de tener el entorno virtual activo antes de ejecutar cualquiera de estos comandos.
 
 ### Modo interfaz gráfica (recomendado)
+
+#### Linux
 
 ```bash
 python3 main.py --gui
 ```
 
+#### Windows
+
+```cmd
+python main.py --gui
+```
+
 Abre una ventana con menú, selección de Pokémon y pantalla de combate interactiva.
 
+---
+
 ### Modo consola (solo texto, sin entorno gráfico)
+
+#### Linux
 
 ```bash
 python3 main.py --console
 ```
 
-Útil para jugar desde una terminal SSH o en sistemas sin entorno de escritorio. Todo el juego se controla con el teclado.
+#### Windows
 
-### Ver los modos disponibles
-
-```bash
-python3 main.py
+```cmd
+python main.py --console
 ```
 
-Muestra el mensaje de ayuda con los argumentos aceptados.
+Útil para jugar desde una terminal sin entorno de escritorio. Todo el juego se controla con el teclado.
 
 ---
 
@@ -149,10 +211,16 @@ PokeFisi/
 
 ## Ejecutar los tests
 
-Con el entorno virtual activo:
+#### Linux
 
 ```bash
 python3 -m pytest tests/ -v
+```
+
+#### Windows
+
+```cmd
+python -m pytest tests/ -v
 ```
 
 Verifica que la fórmula de daño, la tabla de tipos y el flujo de batalla funcionen correctamente.
@@ -161,7 +229,7 @@ Verifica que la fórmula de daño, la tabla de tipos y el flujo de batalla funci
 
 ## Desactivar el entorno virtual
 
-Cuando termines de usar el proyecto:
+Cuando termines de usar el proyecto, en ambos sistemas:
 
 ```bash
 deactivate
@@ -172,10 +240,13 @@ deactivate
 ## Solución de problemas comunes
 
 **`ModuleNotFoundError: No module named 'pygame'`**
-El entorno virtual no está activo. Ejecuta `source venv/bin/activate` y vuelve a intentarlo.
+El entorno virtual no está activo. Actívalo con `source venv/bin/activate` (Linux) o `venv\Scripts\activate.bat` (Windows) y vuelve a intentarlo.
 
 **`pygame.error: No available video device`**
-Estás en un sistema sin entorno gráfico. Usa el modo consola: `python3 main.py --console`.
+Estás en un sistema sin entorno gráfico. Usa el modo consola: `python3 main.py --console` (Linux) o `python main.py --console` (Windows).
 
-**`pygame` falla al instalarse con pip**
+**`pygame` falla al instalarse con pip en Linux**
 Instala las dependencias SDL2 del sistema con el comando del paso 2 y vuelve a ejecutar `pip install -r requirements.txt`.
+
+**PowerShell no permite activar el entorno virtual en Windows**
+Ejecuta `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` y vuelve a intentar activar el entorno.
