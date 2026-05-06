@@ -51,22 +51,27 @@ class GameManager:
             team1 = build_team(team1_ids, self.all_moves)
 
             if mode == "human_vs_ai":
-                team2 = build_team(team2_ids if team2_ids else self._random_ids(team_size), self.all_moves)
+                team2  = build_team(team2_ids, self.all_moves)
                 agent1 = None
                 agent2 = AI_FACTORIES[ai2_idx]()
+                label1 = "Jugador"
+                label2 = agent2.name
             else:
-                team2 = build_team(team2_ids, self.all_moves)
+                team2  = build_team(team2_ids, self.all_moves)
                 agent1 = AI_FACTORIES[ai1_idx]()
                 agent2 = AI_FACTORIES[ai2_idx]()
+                label1 = agent1.name
+                label2 = agent2.name
 
             state = BattleState(team1, team2)
             from gui.screens.battle_screen import BattleScreen
-            self._screen = BattleScreen(state, agent1, agent2, mode)
+            self._screen = BattleScreen(state, agent1, agent2, mode, label1, label2)
 
         elif state_name == "RESULTS":
             battle_screen = self._screen
             from gui.screens.results_screen import ResultsScreen
-            self._screen = ResultsScreen(battle_screen.winner, battle_screen.state)
+            self._screen = ResultsScreen(battle_screen.winner, battle_screen.state,
+                                         battle_screen.label1, battle_screen.label2)
 
     def _random_ids(self, size: int) -> list[int]:
         import random

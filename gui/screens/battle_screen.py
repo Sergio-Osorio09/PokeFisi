@@ -103,16 +103,20 @@ class SwitchButton:
 
 
 class BattleScreen:
-    def __init__(self, state: BattleState, agent1, agent2, mode: str):
+    def __init__(self, state: BattleState, agent1, agent2, mode: str,
+                 label1: str = "Jugador", label2: str = "Jugador 2"):
         self.state  = state
         self.agent1 = agent1
         self.agent2 = agent2
         self.mode   = mode
+        self.label1 = label1
+        self.label2 = label2
         self.battle = Battle(state, agent1, agent2)
 
-        self.font_name  = get_font(24)
-        self.font_type  = get_font(15)
-        self.font_small = get_font(14)
+        self.font_name   = get_font(24)
+        self.font_type   = get_font(15)
+        self.font_small  = get_font(14)
+        self.font_label  = get_font(13)
 
         self.hp_bar_p2 = HPBar(P2_INFO_X, P2_INFO_Y + 30, 260, 16)
         self.hp_bar_p1 = HPBar(P1_INFO_X, P1_INFO_Y + 30, 260, 16)
@@ -167,16 +171,19 @@ class BattleScreen:
         img2 = get_pokemon_image(p2.image, P2_SPR_SIZE)
         surface.blit(img2, (P2_SPR_X, P2_SPR_Y))
 
-        # Nombre P2
+        # Etiqueta del modelo (IA o jugador 2)
+        lbl2 = self.font_label.render(f"[ {self.label2} ]", True, (180, 200, 255))
+        surface.blit(lbl2, (P2_INFO_X, P2_INFO_Y - 18))
+        # Nombre Pokémon P2
         n2 = self.font_name.render(p2.name, True, WHITE)
         surface.blit(n2, (P2_INFO_X, P2_INFO_Y))
-        # Tipo P2
-        t2 = self.font_type.render("/".join(p2.types), True, get_type_color(p2.types[0]))
-        surface.blit(t2, (P2_INFO_X, P2_INFO_Y + 50))
         # HP bar P2
         self.hp_bar_p2.draw(surface, p2.current_hp, p2.max_hp)
         hp2_txt = self.font_small.render(f"{p2.current_hp}/{p2.max_hp}", True, WHITE)
         surface.blit(hp2_txt, (P2_INFO_X + 268, P2_INFO_Y + 28))
+        # Tipo P2
+        t2 = self.font_type.render("/".join(p2.types), True, get_type_color(p2.types[0]))
+        surface.blit(t2, (P2_INFO_X, P2_INFO_Y + 50))
         # Team dots P2
         self._draw_team_dots(surface, self.state.player2_team, P2_INFO_X, P2_INFO_Y + 70)
 
@@ -184,16 +191,19 @@ class BattleScreen:
         img1 = get_pokemon_image(p1.image, P1_SPR_SIZE)
         surface.blit(img1, (P1_SPR_X, P1_SPR_Y))
 
-        # Nombre P1
+        # Etiqueta del jugador 1
+        lbl1 = self.font_label.render(f"[ {self.label1} ]", True, (180, 255, 180))
+        surface.blit(lbl1, (P1_INFO_X, P1_INFO_Y - 18))
+        # Nombre Pokémon P1
         n1 = self.font_name.render(p1.name, True, WHITE)
         surface.blit(n1, (P1_INFO_X, P1_INFO_Y))
-        # Tipo P1
-        t1 = self.font_type.render("/".join(p1.types), True, get_type_color(p1.types[0]))
-        surface.blit(t1, (P1_INFO_X, P1_INFO_Y + 50))
         # HP bar P1
         self.hp_bar_p1.draw(surface, p1.current_hp, p1.max_hp)
         hp1_txt = self.font_small.render(f"{p1.current_hp}/{p1.max_hp}", True, WHITE)
         surface.blit(hp1_txt, (P1_INFO_X + 268, P1_INFO_Y + 28))
+        # Tipo P1
+        t1 = self.font_type.render("/".join(p1.types), True, get_type_color(p1.types[0]))
+        surface.blit(t1, (P1_INFO_X, P1_INFO_Y + 50))
         # Team dots P1
         self._draw_team_dots(surface, self.state.player1_team, P1_INFO_X, P1_INFO_Y + 70)
 
@@ -219,8 +229,17 @@ class BattleScreen:
         overlay.fill((0, 0, 0, 150))
         surface.blit(overlay, (0, 0))
         font = get_font(52)
-        msg = f"¡Jugador {self.winner} gana!" if self.winner else "¡Empate!"
-        txt = font.render(msg, True, (255, 220, 0))
+        if self.winner == 1:
+            winner_name = self.label1
+            color = (120, 255, 120)
+        elif self.winner == 2:
+            winner_name = self.label2
+            color = (180, 200, 255)
+        else:
+            winner_name = None
+            color = WHITE
+        msg = f"¡{winner_name} gana!" if winner_name else "¡Empate!"
+        txt = font.render(msg, True, color)
         surface.blit(txt, txt.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)))
         hint = get_font(20).render("Presiona cualquier tecla para continuar", True, WHITE)
         surface.blit(hint, hint.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 80)))
