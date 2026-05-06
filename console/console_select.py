@@ -1,6 +1,7 @@
 from engine.loader import load_all_pokemon, load_moves, build_team
 from ai.random_agent import RandomAgent
 from ai.heuristic_basic import HeuristicBasicAgent
+from ai.heuristic_advanced import HeuristicAdvancedAgent
 
 
 def show_pokemon_table(pokemon_list: list[dict]):
@@ -37,14 +38,17 @@ def select_team(label: str, team_size: int) -> list[int]:
 def select_ai(label: str):
     print(f"\n{label}:")
     print("  1. Agente Aleatorio")
-    print("  2. Heurística Básica")
+    print("  2. Heuristica Basica")
+    print("  3. Heuristica Avanzada")
     while True:
         choice = input("  Elige IA: ").strip()
         if choice == "1":
             return RandomAgent()
         if choice == "2":
             return HeuristicBasicAgent()
-        print("  [!] Opción inválida.")
+        if choice == "3":
+            return HeuristicAdvancedAgent()
+        print("  [!] Opcion invalida.")
 
 
 def select_team_size() -> int:

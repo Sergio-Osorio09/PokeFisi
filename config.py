@@ -42,7 +42,8 @@ TYPE_COLORS = {
 # AI agent names
 AI_NAMES = {
     1: "Agente Aleatorio",
-    2: "Heurística Básica",
+    2: "Heuristica Basica",
+    3: "Heuristica Avanzada",
 }
 
 # Battle delays (ms) for IA vs IA mode in GUI

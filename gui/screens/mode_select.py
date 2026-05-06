@@ -17,7 +17,7 @@ class ModeSelect:
                                 font_size=22, color=(120,40,120), hover_color=(170,60,170))
 
         # Selector de IA (ai2 siempre visible, ai1 solo en ai_vs_ai)
-        self.ai_options = ["Agente Aleatorio", "Heuristica Basica"]
+        self.ai_options = ["Agente Aleatorio", "Heuristica Basica", "Heuristica Avanzada"]
         self.ai1_idx = 0
         self.ai2_idx = 0
 

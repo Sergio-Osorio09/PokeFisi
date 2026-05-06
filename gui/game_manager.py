@@ -5,11 +5,13 @@ from engine.loader import load_moves, build_team
 from engine.state import BattleState
 from ai.random_agent import RandomAgent
 from ai.heuristic_basic import HeuristicBasicAgent
+from ai.heuristic_advanced import HeuristicAdvancedAgent
 
 
 AI_FACTORIES = [
     lambda: RandomAgent(),
     lambda: HeuristicBasicAgent(),
+    lambda: HeuristicAdvancedAgent(),
 ]
 
 
