@@ -2,25 +2,25 @@ from engine.loader import load_moves, build_team
 from engine.state import BattleState
 from console.console_select import select_team, select_ai, select_team_size
 from console.console_battle import run_console_battle_human_vs_ai, run_console_battle_ai_vs_ai
-from ai.random_agent import RandomAgent
 
 
 def _print_banner():
     print("""
-╔══════════════════════════════════╗
-║          POKEFISI  🎮            ║
-╠══════════════════════════════════╣
-║  1. Humano vs IA                 ║
-║  2. IA vs IA                     ║
-║  3. Salir                        ║
-╚══════════════════════════════════╝""")
+╔══════════════════════════════════════╗
+║           POKEFISI  🎮              ║
+╠══════════════════════════════════════╣
+║  1. Humano vs IA                     ║
+║  2. IA vs IA                         ║
+║  3. Entrenar Heuristica Avanzada     ║
+║  4. Salir                            ║
+╚══════════════════════════════════════╝""")
 
 
 def start_console():
     all_moves = load_moves()
     while True:
         _print_banner()
-        choice = input("Elige una opción: ").strip()
+        choice = input("Elige una opcion: ").strip()
 
         if choice == "1":
             size = select_team_size()
@@ -49,10 +49,46 @@ def start_console():
             run_console_battle_ai_vs_ai(state, agent1, agent2)
 
         elif choice == "3":
+            _train_flow()
+
+        elif choice == "4":
             print("\n¡Hasta luego!\n")
             break
+
         else:
-            print("  [!] Opción inválida.")
+            print("  [!] Opcion invalida.")
+
+
+def _train_flow():
+    from ai.trainer import run_training, save_weights
+    from ai.heuristic_advanced import DEFAULT_WEIGHTS
+
+    print("\n=== Entrenar Heuristica Avanzada ===")
+    while True:
+        raw = input("  ¿Cuantas batallas para entrenar? (min. 10): ").strip()
+        try:
+            n = int(raw)
+            if n >= 10:
+                break
+            print("  [!] Ingresa al menos 10 batallas.")
+        except ValueError:
+            print("  [!] Ingresa un numero entero.")
+
+    data = run_training(n)
+    path = save_weights(data)
+
+    print(f"\n  Entrenamiento completado!")
+    print(f"  Guardado en:  {path}")
+    print(f"  Agente:       HeuristicaAvanzada-{n}")
+    print(f"  Win-rate:     {data['win_rate']:.1%}")
+
+    labels = ["alive_mine", "hp_avg_mine", "hp_avg_opp", "type_adv", "speed_norm", "alive_opp"]
+    print("\n  Pesos aprendidos (vs base):")
+    for lbl, w, d in zip(labels, data["weights"], DEFAULT_WEIGHTS):
+        diff = w - d
+        sign = "+" if diff >= 0 else ""
+        print(f"    {lbl:<14}  {w:.4f}  (base {d:.3f}, {sign}{diff:.4f})")
+    print()
 
 
 def _random_team(size: int) -> list[int]:

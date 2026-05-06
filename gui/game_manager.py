@@ -3,16 +3,10 @@ import pygame
 from config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BG_COLOR
 from engine.loader import load_moves, build_team
 from engine.state import BattleState
-from ai.random_agent import RandomAgent
-from ai.heuristic_basic import HeuristicBasicAgent
-from ai.heuristic_advanced import HeuristicAdvancedAgent
+from ai.registry import AI_REGISTRY
 
-
-AI_FACTORIES = [
-    lambda: RandomAgent(),
-    lambda: HeuristicBasicAgent(),
-    lambda: HeuristicAdvancedAgent(),
-]
+AI_NAMES     = [name    for name, _       in AI_REGISTRY]
+AI_FACTORIES = [factory for _,    factory in AI_REGISTRY]
 
 
 class GameManager:

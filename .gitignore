@@ -19,6 +19,7 @@ POKEFISI_Plan_Arquitectura.md
 
 # Assets generados
 data/best_weights.json
+data/weights_*.json
 experiments/results/
 
 # Directorios vacíos de assets (solo se sube la estructura)

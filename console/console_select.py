@@ -1,4 +1,6 @@
+import json
 from engine.loader import load_all_pokemon, load_moves, build_team
+from ai.heuristic_trained import find_trained_weights, HeuristicTrainedAgent
 from ai.random_agent import RandomAgent
 from ai.heuristic_basic import HeuristicBasicAgent
 from ai.heuristic_advanced import HeuristicAdvancedAgent
@@ -23,37 +25,53 @@ def select_team(label: str, team_size: int) -> list[int]:
     show_pokemon_table(all_poke)
     valid_ids = {p["id"] for p in all_poke}
     while True:
-        raw = input(f"\n{label} — Elige {team_size} Pokémon (IDs separados por espacios): ").strip()
+        raw = input(f"\n{label} — Elige {team_size} Pokemon (IDs separados por espacios): ").strip()
         try:
             chosen = list(dict.fromkeys(int(x) for x in raw.split()))
             chosen = [x for x in chosen if x in valid_ids]
             if len(chosen) < team_size:
-                print(f"  [!] Necesitas elegir exactamente {team_size} Pokémon válidos.")
+                print(f"  [!] Necesitas elegir exactamente {team_size} Pokemon validos.")
                 continue
             return chosen[:team_size]
         except ValueError:
-            print("  [!] Ingresa solo números separados por espacios.")
+            print("  [!] Ingresa solo numeros separados por espacios.")
+
+
+def _build_ai_options() -> list[tuple[str, object]]:
+    """Construye lista de (nombre, factory) incluyendo agentes entrenados disponibles."""
+    options = [
+        ("Agente Aleatorio",    lambda: RandomAgent()),
+        ("Heuristica Basica",   lambda: HeuristicBasicAgent()),
+        ("Heuristica Avanzada", lambda: HeuristicAdvancedAgent()),
+    ]
+    for path in find_trained_weights():
+        p = path
+        with open(p) as f:
+            n = json.load(f)["battles"]
+        options.append((f"HeuristicaAvanzada-{n}", lambda p=p: HeuristicTrainedAgent(p)))
+    return options
 
 
 def select_ai(label: str):
+    options = _build_ai_options()
     print(f"\n{label}:")
-    print("  1. Agente Aleatorio")
-    print("  2. Heuristica Basica")
-    print("  3. Heuristica Avanzada")
+    for i, (name, _) in enumerate(options, 1):
+        print(f"  {i}. {name}")
     while True:
         choice = input("  Elige IA: ").strip()
-        if choice == "1":
-            return RandomAgent()
-        if choice == "2":
-            return HeuristicBasicAgent()
-        if choice == "3":
-            return HeuristicAdvancedAgent()
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(options):
+                _, factory = options[idx]
+                return factory()
+        except ValueError:
+            pass
         print("  [!] Opcion invalida.")
 
 
 def select_team_size() -> int:
     while True:
-        raw = input("\nTamaño de equipo (3 o 4): ").strip()
+        raw = input("\nTamano de equipo (3 o 4): ").strip()
         if raw in ("3", "4"):
             return int(raw)
         print("  [!] Escribe 3 o 4.")
