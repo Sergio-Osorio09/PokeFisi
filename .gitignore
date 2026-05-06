@@ -1,0 +1,32 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.log
+
+# Claude CLI
+.claude/
+memory/
+
+# Caché de pytest
+.pytest_cache/
+
+# Screenshots y documentos de diseño
+ss/
+*.pdf
+POKEFISI_Plan_Arquitectura.md
+
+# Assets generados
+data/best_weights.json
+experiments/results/
+
+# Directorios vacíos de assets (solo se sube la estructura)
+assets/images/pokemon/*
+assets/images/backgrounds/*
+assets/images/ui/*
+assets/fonts/*
+!assets/images/pokemon/.gitkeep
+!assets/images/backgrounds/.gitkeep
+!assets/images/ui/.gitkeep
+!assets/fonts/.gitkeep
