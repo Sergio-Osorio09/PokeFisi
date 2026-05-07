@@ -15,9 +15,10 @@
 7. [La fórmula de daño](#7-la-fórmula-de-daño)
 8. [Ventajas y desventajas de tipo](#8-ventajas-y-desventajas-de-tipo)
 9. [Inteligencia Artificial — Los Agentes](#9-inteligencia-artificial--los-agentes)
-10. [Arquitectura del código](#10-arquitectura-del-código)
-11. [Flujo completo de una batalla](#11-flujo-completo-de-una-batalla)
-12. [Estrategias recomendadas](#12-estrategias-recomendadas)
+10. [Entrenamiento de la IA — Stochastic Hill-Climbing](#10-entrenamiento-de-la-ia--stochastic-hill-climbing)
+11. [Arquitectura del código](#11-arquitectura-del-código)
+12. [Flujo completo de una batalla](#12-flujo-completo-de-una-batalla)
+13. [Estrategias recomendadas](#13-estrategias-recomendadas)
 
 ---
 
@@ -78,10 +79,18 @@ Elige entre dos modos:
 - **HUMANO vs IA**: tú controlas el Jugador 1 y una IA controla al Jugador 2.
 - **IA vs IA**: dos agentes de IA se enfrentan automáticamente. Puedes observar la batalla en tiempo real.
 
-Después selecciona qué tipo de IA quieres enfrentar (o usar en cada lado):
+Después selecciona qué tipo de IA quieres enfrentar usando los botones `<` y `>`. La pantalla muestra en tiempo real para cada agente seleccionado:
+
+- **Descripción** de su estrategia.
+- **Pesos verticales** (para Heurística Avanzada y agentes entrenados): cada factor aparece en su propia fila con una barra de color proporcional a su valor, lo que permite comparar visualmente los dos agentes en modo IA vs IA.
+- **Win-rate de entrenamiento** si el agente fue generado mediante el proceso de entrenamiento.
+
+Agentes disponibles:
 
 - **Agente Aleatorio**: elige acciones completamente al azar.
 - **Heurística Básica**: evalúa el estado del juego y elige la acción más inteligente según su HP.
+- **Heurística Avanzada**: evalúa 6 factores ponderados del equipo completo.
+- **HeuristicaAvanzada-N**: agente entrenado con N batallas. Solo aparece si previamente lo entrenaste desde la consola.
 
 Por último elige el tamaño del equipo: **3 vs 3** o **4 vs 4**.
 
@@ -134,17 +143,20 @@ Ejecuta `python3 main.py --console` (Linux) o `python main.py --console` (Window
 ### Menú principal
 
 ```
-╔══════════════════════════════════╗
-║          POKEFISI  🎮            ║
-╠══════════════════════════════════╣
-║  1. Humano vs IA                 ║
-║  2. IA vs IA                     ║
-║  3. Salir                        ║
-╚══════════════════════════════════╝
-Elige una opción: _
+╔══════════════════════════════════════╗
+║           POKEFISI  🎮              ║
+╠══════════════════════════════════════╣
+║  1. Humano vs IA                     ║
+║  2. IA vs IA                         ║
+║  3. Entrenar Heuristica Avanzada     ║
+║  4. Salir                            ║
+╚══════════════════════════════════════╝
+Elige una opcion: _
 ```
 
 Escribe el número y presiona `Enter`.
+
+La opción **3** lanza el proceso de entrenamiento: pide el número de batallas, muestra el progreso en tiempo real y guarda los pesos resultantes automáticamente.
 
 ### Selección de Pokémon
 
@@ -530,6 +542,77 @@ También considera los cambios de Pokémon: si cambiar a otro Pokémon del equip
 
 ---
 
+### Agente 3 — Heurística Avanzada (`ai/heuristic_advanced.py`)
+
+Este agente amplía la heurística básica considerando el **equipo completo** en lugar de solo el Pokémon activo, e incorpora cuatro factores adicionales: ventaja de tipo, diferencia de velocidad, porcentaje de Pokémon vivos propios y rivales.
+
+#### La función de evaluación de 6 factores
+
+```python
+# ai/heuristic_advanced.py  (líneas 66-73)
+w = self.weights
+return (
+      w[0] * alive_mine       # fracción de mis Pokémon vivos
+    + w[1] * hp_avg_mine      # HP promedio propio normalizado
+    - w[2] * hp_avg_opp       # HP promedio rival normalizado
+    + w[3] * type_adv         # mejor ventaja de tipo disponible / 4.0
+    + w[4] * speed_norm       # diferencia de velocidad normalizada a [0,1]
+    - w[5] * alive_opp        # fracción de Pokémon vivos del rival
+)
+```
+
+Todos los factores están normalizados en `[0, 1]` para que los pesos sean comparables entre sí.
+
+| Factor | Cálculo | ¿Por qué importa? |
+|---|---|---|
+| `alive_mine` | vivos_propios / total | Más Pokémon vivos = más opciones tácticas |
+| `hp_avg_mine` | media de hp_ratio() del equipo | Mide la resistencia global del equipo |
+| `hp_avg_opp` | media de hp_ratio() rival | Cuanto más bajo, más cerca de ganar |
+| `type_adv` | mejor multiplicador disponible / 4.0 | Explotar ventajas de tipo es clave |
+| `speed_norm` | (speed_diff + MAX_SPE) / (2 · MAX_SPE) | Actuar primero da ventaja táctica |
+| `alive_opp` | vivos_rivales / total | Reducir el equipo rival acelera la victoria |
+
+Los **pesos por defecto** son `[0.30, 0.25, 0.25, 0.10, 0.05, 0.05]`. Se pueden ajustar manualmente en `config.py` o mediante el entrenamiento automático.
+
+#### Ventaja de tipo
+
+El factor `type_adv` se calcula buscando el mayor multiplicador de tipo entre todos los movimientos disponibles del Pokémon activo:
+
+```python
+# ai/heuristic_advanced.py  (líneas 75-82)
+def _best_type_advantage(self, me, opp) -> float:
+    best = 0.0
+    for move in me.get_available_moves():
+        mult = get_type_multiplier(move.type, opp.types)
+        if mult > best:
+            best = mult
+    return best
+```
+
+Esto incentiva al agente a elegir movimientos superefectivos o al menos a cambiar a un Pokémon con mejor cobertura de tipo.
+
+---
+
+### Agente 4 — Heurística Entrenada (`ai/heuristic_trained.py`)
+
+Es una subclase de `HeuristicAdvancedAgent` que en lugar de usar los pesos por defecto, **carga pesos optimizados** desde un archivo JSON generado por el proceso de entrenamiento.
+
+```python
+# ai/heuristic_trained.py
+class HeuristicTrainedAgent(HeuristicAdvancedAgent):
+    def __init__(self, weights_file: str):
+        with open(weights_file) as f:
+            data = json.load(f)
+        super().__init__(weights=data["weights"])
+        self.name = f"HeuristicaAvanzada-{data['battles']}"
+        self.battles_trained = data["battles"]
+        self.win_rate_training = data.get("win_rate", 0.0)
+```
+
+Su lógica de decisión es idéntica a la Heurística Avanzada; la única diferencia son los pesos. Los pesos aprendidos reflejan qué factores resultaron más predictivos de victorias durante el entrenamiento.
+
+---
+
 ### El estado de la batalla (`engine/state.py`)
 
 La clase `BattleState` es la pieza central que conecta todo. Representa una **fotografía completa** del estado actual de la batalla en un momento dado.
@@ -564,32 +647,156 @@ def copy(self):
 
 ---
 
-## 10. Arquitectura del código
+## 10. Entrenamiento de la IA — Stochastic Hill-Climbing
+
+El entrenamiento busca los pesos que maximizan el win-rate de la Heurística Avanzada enfrentándola contra una mezcla de oponentes. El algoritmo usado se llama **Stochastic Hill-Climbing** (escalada estocástica de colinas).
+
+### Idea general
+
+Imagina los 6 pesos como una posición en un espacio de 6 dimensiones. El objetivo es encontrar el punto de ese espacio donde el agente gana más batallas. Para eso el algoritmo:
+
+1. Parte de una posición conocida (los pesos por defecto).
+2. Da un paso aleatorio pequeño (perturba los pesos con ruido gaussiano).
+3. Si el nuevo punto es mejor (ganó la batalla), se mueve allí.
+4. Si es peor (perdió), vuelve al punto anterior.
+5. Repite N veces.
+
+### Enfriamiento de la temperatura
+
+El tamaño del paso disminuye con el tiempo siguiendo una función exponencial:
+
+```python
+# ai/trainer.py  (línea 43)
+t = 0.12 * math.exp(-3.5 * i / n_battles)
+```
+
+Al inicio (`i=0`): `t ≈ 0.12` → pasos grandes, exploración amplia del espacio de pesos.
+Al final (`i=N`): `t ≈ 0.005` → pasos pequeños, refinamiento de la solución encontrada.
+
+Este esquema se llama **simulated annealing** y evita que el algoritmo quede atrapado en óptimos locales al principio, mientras converge a una solución estable al final.
+
+### Perturbación y normalización de pesos
+
+En cada batalla, los pesos candidatos se generan así:
+
+```python
+# ai/trainer.py  (líneas 45-48)
+candidate = [max(0.005, w + random.gauss(0, t)) for w in current_w]
+total = sum(candidate)
+candidate = [w / total for w in candidate]  # normalizar para que sumen 1
+```
+
+1. A cada peso se le suma ruido gaussiano con desviación estándar `t`.
+2. Se fuerza un mínimo de 0.005 para que ningún factor quede completamente ignorado.
+3. Se normalizan para que la suma sea 1, manteniendo la interpretación de "fracción del score".
+
+### Oponentes mixtos
+
+El agente se enfrenta alternando dos rivales:
+- **Batallas pares** (`i % 2 == 0`): contra `RandomAgent`.
+- **Batallas impares** (`i % 2 == 1`): contra `HeuristicBasicAgent`.
+
+Esta mezcla evita que los pesos se sobreajusten a un único estilo de juego y produce un agente más robusto.
+
+### Selección de los mejores pesos
+
+Los pesos que se guardan no son los del último paso, sino los de la **ventana deslizante con mayor win-rate**:
+
+```python
+# ai/trainer.py  (líneas 57-62)
+window.append(1 if won else 0)
+if len(window) > 20:
+    window.pop(0)
+wr_window = sum(window) / len(window)
+if wr_window >= best_wr and len(window) >= 10:
+    best_wr = wr_window
+    best_w = current_w[:]
+```
+
+Esto protege contra rachas de suerte: un agente que gana 20 batallas seguidas y luego pierde 10 no sobreescribe a uno que mantuvo una tasa del 70% de forma consistente.
+
+### Ejemplo de output durante el entrenamiento
+
+```
+  Entrenando 200 batallas vs Random (50%) y HeuristicBasica (50%)...
+
+  [ 10%] Batalla  20/200  |  Win-rate: 65.0%  |  Temp: 0.0931
+  [ 20%] Batalla  40/200  |  Win-rate: 67.5%  |  Temp: 0.0691
+  ...
+  [100%] Batalla 200/200  |  Win-rate: 74.0%  |  Temp: 0.0064
+
+  Entrenamiento completado!
+  Guardado en:  data/weights_200.json
+  Agente:       HeuristicaAvanzada-200
+  Win-rate:     74.0%
+
+  Pesos aprendidos (vs base):
+    alive_mine      0.3381  (base 0.300,  +0.0381)
+    hp_avg_mine     0.2715  (base 0.250,  +0.0215)
+    hp_avg_opp      0.2194  (base 0.250,  -0.0306)
+    type_adv        0.0982  (base 0.100,  -0.0018)
+    speed_norm      0.0431  (base 0.050,  -0.0069)
+    alive_opp       0.0297  (base 0.050,  -0.0203)
+```
+
+### Formato del archivo de pesos
+
+El archivo `data/weights_N.json` tiene la siguiente estructura:
+
+```json
+{
+  "weights": [0.338, 0.271, 0.219, 0.098, 0.043, 0.031],
+  "battles": 200,
+  "win_rate": 0.74
+}
+```
+
+El orden de los pesos corresponde siempre a: `[alive_mine, hp_avg_mine, hp_avg_opp, type_adv, speed_norm, alive_opp]`.
+
+### Registro automático de agentes (`ai/registry.py`)
+
+Al iniciar el juego (GUI o consola), el registro escanea `data/weights_*.json` y añade automáticamente cada agente entrenado a la lista de selección:
+
+```python
+# ai/registry.py
+def build_registry():
+    return _BASE + _trained_entries()   # base + todos los weights_*.json encontrados
+```
+
+Esto significa que cualquier archivo de pesos que coloques en `data/` estará disponible como agente sin necesidad de modificar el código.
+
+---
+
+## 11. Arquitectura del código
 
 El proyecto sigue una arquitectura en capas donde cada módulo tiene una responsabilidad clara y no depende de módulos de capas superiores.
 
 ```
 main.py
     │
-    ├── gui/game_manager.py      ← orquesta la GUI
-    │       └── gui/screens/     ← pantallas individuales
-    │       └── gui/components/  ← componentes visuales reutilizables
+    ├── gui/game_manager.py          ← orquesta la GUI
+    │       └── gui/screens/         ← pantallas individuales
+    │       └── gui/components/      ← componentes visuales reutilizables
     │
-    ├── console/console_menu.py  ← orquesta el modo texto
-    │       └── console/...      ← selección y batalla en texto
+    ├── console/console_menu.py      ← orquesta el modo texto + entrenamiento
+    │       └── console/...          ← selección y batalla en texto
     │
-    ├── ai/                      ← agentes de IA
-    │       └── base_agent.py    ← contrato abstracto
-    │       └── random_agent.py  ← nivel 1
-    │       └── heuristic_basic.py ← nivel 2
+    ├── ai/                          ← agentes de IA
+    │       ├── base_agent.py        ← contrato abstracto (+ get_info_lines)
+    │       ├── random_agent.py      ← nivel 1
+    │       ├── heuristic_basic.py   ← nivel 2
+    │       ├── heuristic_advanced.py← nivel 3 (6 factores ponderados)
+    │       ├── heuristic_trained.py ← carga pesos desde weights_N.json
+    │       ├── trainer.py           ← bucle de entrenamiento hill-climbing
+    │       └── registry.py          ← registro dinámico de todos los agentes
     │
-    └── engine/                  ← motor de combate (sin GUI ni IA)
-            └── pokemon.py       ← clase Pokémon
-            └── move.py          ← clase Movimiento
-            └── damage.py        ← fórmula de daño + tabla de tipos
-            └── state.py         ← estado de la batalla
-            └── battle.py        ← flujo de turnos
-            └── loader.py        ← carga de datos JSON
+    └── engine/                      ← motor de combate (sin GUI ni IA)
+            ├── pokemon.py           ← clase Pokémon
+            ├── move.py              ← clase Movimiento
+            ├── damage.py            ← fórmula de daño + tabla de tipos
+            ├── state.py             ← estado de la batalla
+            ├── battle.py            ← flujo de turnos
+            └── loader.py            ← carga de datos JSON
 ```
 
 **Principio clave:** el módulo `engine/` no sabe nada de pygame, consola ni IA. Funciona solo con datos. Los agentes de IA tampoco saben de pygame. Esto hace que cualquier mejora al motor beneficie automáticamente a todos los modos.
@@ -609,7 +816,7 @@ Si quieres experimentar con la fórmula de daño, cambiar `K` aquí afecta a tod
 
 ---
 
-## 11. Flujo completo de una batalla
+## 12. Flujo completo de una batalla
 
 Entender el flujo de una batalla ayuda a comprender cómo el código conecta todas las piezas.
 
@@ -669,7 +876,7 @@ Battle.run()
 
 ---
 
-## 12. Estrategias recomendadas
+## 13. Estrategias recomendadas
 
 ### Para ganar al Agente Aleatorio
 
@@ -682,6 +889,22 @@ La heurística solo mira el HP inmediato. No predice más de un turno. Puedes ve
 - **Sacrificando un Pokémon débil** para hacer un cambio ventajoso: la IA no lo anticipa.
 - **Usando un Pokémon lento pero muy defensivo** (como Slowbro o Rhydon): su alta defensa hace que el daño calculado por la heurística sea menor del esperado.
 - **Eligiendo movimientos de alta precisión** sobre movimientos de alto poder: si la IA usa Hydro Pump (BP=110, Acc=80%) y falla, pierdes un turno y el humano puede aprovechar.
+
+### Para ganar a la Heurística Avanzada
+
+Esta IA considera el equipo completo y la ventaja de tipo. Es más difícil de sorprender:
+
+- **Diversifica los tipos de tu equipo**: si tus tres Pokémon son todos del mismo tipo, la IA encontrará fácilmente un movimiento superefectivo contra todos.
+- **Prioriza Pokémon rápidos**: la IA pondera la velocidad; un equipo con alta SPE le da menos ventaja.
+- **Cambia de Pokémon estratégicamente**: la IA no simula la respuesta de tu cambio, solo el estado inmediato.
+
+### Para ganar a un agente entrenado
+
+Depende de cómo resultaron sus pesos. Observa los pesos en la pantalla de selección:
+
+- Si `type_adv` es alto, el agente prioriza mucho la ventaja de tipo: construye un equipo con cobertura de tipos variada.
+- Si `vel` es alto, el agente valora mucho actuar primero: usa Pokémon de alta velocidad.
+- Si `hp_avg_opp` (negativo en la fórmula) tiene peso bajo, el agente no presiona agresivamente el daño: un equipo defensivo puede aguantar y desgastarlo.
 
 ### Equipos equilibrados sugeridos para comenzar
 

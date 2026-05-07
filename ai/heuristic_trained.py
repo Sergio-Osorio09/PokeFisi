@@ -13,6 +13,14 @@ class HeuristicTrainedAgent(HeuristicAdvancedAgent):
         self.battles_trained = data["battles"]
         self.win_rate_training = data.get("win_rate", 0.0)
 
+    def get_info_lines(self) -> list[str]:
+        w = self.weights
+        w_str = "  ".join(f"{l}:{w[i]:.2f}" for i, l in enumerate(self._LABELS))
+        return [
+            f"Entrenada: {self.battles_trained} batallas | Win-rate: {self.win_rate_training:.1%}",
+            f"Pesos: {w_str}",
+        ]
+
 
 def find_trained_weights() -> list[str]:
     base = os.path.join(os.path.dirname(__file__), '..', 'data')

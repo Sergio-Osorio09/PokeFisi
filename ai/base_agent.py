@@ -16,6 +16,9 @@ class Agent(ABC):
           o {"type": "switch", "pokemon_index": 0-N}
         """
 
+    def get_info_lines(self) -> list[str]:
+        return []
+
     def on_battle_end(self, won: bool):
         self.battles += 1
         if won:

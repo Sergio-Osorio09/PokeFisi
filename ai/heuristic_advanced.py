@@ -28,9 +28,19 @@ class HeuristicAdvancedAgent(Agent):
     disponibles y la diferencia de velocidades entre los activos.
     """
 
+    _LABELS = ["alive", "hp_mio", "hp_opp", "tipo", "vel", "vivos"]
+
     def __init__(self, weights: list[float] | None = None):
         super().__init__("Heurística Avanzada")
         self.weights = weights if weights is not None else DEFAULT_WEIGHTS[:]
+
+    def get_info_lines(self) -> list[str]:
+        w = self.weights
+        w_str = "  ".join(f"{l}:{w[i]:.2f}" for i, l in enumerate(self._LABELS))
+        return [
+            "Evalua 6 factores: equipo vivo, HP, tipo, velocidad.",
+            f"Pesos: {w_str}",
+        ]
 
     # ── Evaluación ────────────────────────────────────────────────────────────
 

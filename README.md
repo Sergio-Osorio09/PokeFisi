@@ -165,7 +165,7 @@ Abre una ventana con menú, selección de Pokémon y pantalla de combate interac
 
 1. En el **menú principal** selecciona `NUEVA BATALLA`.
 2. Elige el modo de juego: `HUMANO vs IA` o `IA vs IA`.
-3. Si elegiste `HUMANO vs IA`, selecciona con qué IA quieres enfrentarte (Agente Aleatorio o Heurística Básica).
+3. Selecciona el agente de IA con los botones `<` y `>`. La pantalla muestra la descripción del agente y sus **pesos verticalmente** para comparar fácilmente entre opciones. Si hay agentes entrenados, también aparecen aquí con su win-rate.
 4. Elige el tamaño del equipo (`3 vs 3` o `4 vs 4`) y pulsa `CONTINUAR`.
 5. En la pantalla de selección elige tu equipo haciendo clic en las tarjetas de Pokémon. Usa la **rueda del ratón** o la **barra lateral** para desplazarte y ver los 30 Pokémon.
 6. Una vez completado tu equipo, elige el equipo rival y pulsa `INICIAR BATALLA`.
@@ -175,6 +175,8 @@ Abre una ventana con menú, selección de Pokémon y pantalla de combate interac
 
 El juego guía con menús numerados. Escribe el número de la opción y pulsa `Enter`. Para elegir Pokémon ingresa los IDs separados por espacios (por ejemplo: `1 5 12`).
 
+Al seleccionar una IA, la consola muestra la descripción y los pesos de cada agente disponible, incluyendo los entrenados que hayas generado.
+
 ---
 
 ## Agentes de IA disponibles
@@ -183,6 +185,29 @@ El juego guía con menús numerados. Escribe el número de la opción y pulsa `E
 |---|---|
 | **Agente Aleatorio** | Elige movimientos y cambios completamente al azar. Sirve como línea base de comparación. |
 | **Heurística Básica** | Evalúa cada acción posible y elige la que maximiza su HP propio mientras reduce el del oponente. |
+| **Heurística Avanzada** | Evalúa 6 factores ponderados: Pokémon vivos, HP promedio del equipo, HP promedio del rival, ventaja de tipo, diferencia de velocidad y cantidad de vivos rivales. |
+| **HeuristicaAvanzada-N** | Versión entrenada con N batallas mediante stochastic hill-climbing. Sus pesos se ajustaron automáticamente para maximizar victorias. Aparece en el selector solo si previamente entrenaste un agente desde la consola. |
+
+---
+
+## Entrenar una IA (solo modo consola)
+
+Puedes generar tu propio agente con pesos optimizados entrenándolo desde la consola:
+
+```bash
+python3 main.py --console   # Linux
+python main.py --console    # Windows
+```
+
+Elige la opción **3. Entrenar Heuristica Avanzada** e ingresa el número de batallas. El entrenamiento:
+
+1. Parte de los pesos por defecto de la Heurística Avanzada.
+2. En cada batalla genera una variante con pequeñas perturbaciones aleatorias en los pesos.
+3. Si la variante gana, adopta esos pesos como nueva base; si pierde, los descarta.
+4. La magnitud de las perturbaciones disminuye con el tiempo (enfriamiento), pasando de explorar ampliamente al inicio a refinar con precisión al final.
+5. Guarda automáticamente los mejores pesos en `data/weights_N.json`.
+
+El agente resultante se llama `HeuristicaAvanzada-N` y aparece disponible tanto en consola como en la GUI la próxima vez que inicies el juego.
 
 ---
 
@@ -190,20 +215,28 @@ El juego guía con menús numerados. Escribe el número de la opción y pulsa `E
 
 ```
 PokeFisi/
-├── main.py          # Punto de entrada — detecta --gui o --console
-├── config.py        # Constantes globales (resolución, FPS, factor K)
-├── requirements.txt # Dependencias pip
+├── main.py               # Punto de entrada — detecta --gui o --console
+├── config.py             # Constantes globales (resolución, FPS, factor K)
+├── requirements.txt      # Dependencias pip
 ├── data/
-│   ├── pokemon.json # 30 Pokémon con stats y movimientos
-│   └── moves.json   # 72 movimientos con tipo, poder y precisión
-├── engine/          # Motor de combate (lógica pura, sin GUI)
-├── ai/              # Agentes de inteligencia artificial
-├── console/         # Modo consola (texto puro)
-├── gui/             # Interfaz gráfica con pygame
-│   ├── screens/     # Pantallas: menú, selección, combate, resultados
-│   └── components/  # Botón, barra HP, tarjeta Pokémon, log de batalla
-├── assets/          # Carpetas para sprites y fuentes (vacías por defecto)
-└── tests/           # Tests unitarios del motor de combate
+│   ├── pokemon.json      # 30 Pokémon con stats y movimientos
+│   ├── moves.json        # 72 movimientos con tipo, poder y precisión
+│   └── weights_N.json    # Pesos entrenados (generados al entrenar, N = batallas)
+├── engine/               # Motor de combate (lógica pura, sin GUI)
+├── ai/
+│   ├── base_agent.py     # Contrato abstracto de todos los agentes
+│   ├── random_agent.py   # Nivel 1 — Agente Aleatorio
+│   ├── heuristic_basic.py    # Nivel 2 — Heurística Básica
+│   ├── heuristic_advanced.py # Nivel 3 — Heurística Avanzada (6 factores)
+│   ├── heuristic_trained.py  # Agente que carga pesos desde weights_N.json
+│   ├── trainer.py        # Bucle de entrenamiento (stochastic hill-climbing)
+│   └── registry.py       # Registro central de agentes disponibles
+├── console/              # Modo consola (texto puro)
+├── gui/                  # Interfaz gráfica con pygame
+│   ├── screens/          # Pantallas: menú, selección, combate, resultados
+│   └── components/       # Botón, barra HP, tarjeta Pokémon, log de batalla
+├── assets/               # Carpetas para sprites y fuentes (vacías por defecto)
+└── tests/                # Tests unitarios del motor de combate
 ```
 
 ---

@@ -7,6 +7,9 @@ class HeuristicBasicAgent(Agent):
     def __init__(self):
         super().__init__("Heurística Básica")
 
+    def get_info_lines(self) -> list[str]:
+        return ["Evalua: hp_propio - hp_oponente del activo."]
+
     def _evaluate(self, state: BattleState, player_id: int) -> float:
         me = state.get_active(player_id)
         opp = state.get_active(3 - player_id)

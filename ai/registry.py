@@ -33,3 +33,6 @@ def build_registry() -> list[tuple[str, object]]:
 
 # Instancia estática para uso en GUI (snapshot al inicio del proceso)
 AI_REGISTRY: list[tuple[str, object]] = build_registry()
+
+# Info lines pre-computadas por índice (mismo orden que AI_REGISTRY)
+AI_INFO: list[list[str]] = [factory().get_info_lines() for _, factory in AI_REGISTRY]

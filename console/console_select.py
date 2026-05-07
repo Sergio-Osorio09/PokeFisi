@@ -55,8 +55,11 @@ def _build_ai_options() -> list[tuple[str, object]]:
 def select_ai(label: str):
     options = _build_ai_options()
     print(f"\n{label}:")
-    for i, (name, _) in enumerate(options, 1):
+    for i, (name, factory) in enumerate(options, 1):
         print(f"  {i}. {name}")
+        for line in factory().get_info_lines():
+            print(f"     {line}")
+    print()
     while True:
         choice = input("  Elige IA: ").strip()
         try:
