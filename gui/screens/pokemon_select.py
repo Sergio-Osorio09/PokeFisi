@@ -1,3 +1,4 @@
+import random
 import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
@@ -57,11 +58,15 @@ class PokemonSelect:
 
         # Botones inferiores
         cx = WINDOW_WIDTH // 2
-        self.btn_back  = Button((cx - 170, GRID_BOT + 8, 150, 46), "ATRAS",
+        self.btn_back  = Button((cx - 340, GRID_BOT + 8, 150, 46), "ATRAS",
                                 font_size=20, color=(100,40,40), hover_color=(150,60,60))
         self.btn_start = Button((cx + 20,  GRID_BOT + 8, 150, 46), "INICIAR BATALLA",
                                 font_size=17, color=(40,100,40), hover_color=(60,150,60))
         self.btn_start.enabled = False
+
+        # Botón aleatorio (solo visible en ai_vs_ai)
+        self.btn_random = Button((cx - 170, GRID_BOT + 8, 340, 46), "EQUIPOS ALEATORIOS",
+                                 font_size=20, color=(60, 80, 140), hover_color=(80, 110, 190))
 
     def _build_cards(self):
         self._cards.clear()
@@ -97,7 +102,10 @@ class PokemonSelect:
                          (0, GRID_BOT), (WINDOW_WIDTH, GRID_BOT), 1)
 
         self.btn_back.draw(surface)
-        self.btn_start.draw(surface)
+        if self.mode == "ai_vs_ai":
+            self.btn_random.draw(surface)
+        else:
+            self.btn_start.draw(surface)
 
     def _draw_header(self, surface: pygame.Surface):
         # Título
@@ -196,8 +204,12 @@ class PokemonSelect:
         # Botones de navegación
         if self.btn_back.handle_event(event):
             return "MODE_SELECT"
-        if self.btn_start.handle_event(event):
-            return ("BATTLE", self.team1[:], self.team2[:])
+        if self.mode == "ai_vs_ai":
+            if self.btn_random.handle_event(event):
+                return self._random_battle()
+        else:
+            if self.btn_start.handle_event(event):
+                return ("BATTLE", self.team1[:], self.team2[:])
 
         # Clic en tarjetas (solo si están en el área visible y no se estaba arrastrando)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -239,4 +251,10 @@ class PokemonSelect:
     def _title(self) -> str:
         if self.mode == "human_vs_ai":
             return "Elige tu equipo" if self.current_player == 1 else "Elige el equipo de la IA rival"
-        return f"Equipo IA {self.current_player}"
+        return f"Equipo IA {self.current_player}  —  o usa EQUIPOS ALEATORIOS"
+
+    def _random_battle(self):
+        all_ids = [p["id"] for p in self.all_pokemon]
+        ids1 = random.sample(all_ids, self.team_size)
+        ids2 = random.sample(all_ids, self.team_size)
+        return ("BATTLE", ids1, ids2)
