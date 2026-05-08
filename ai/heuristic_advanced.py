@@ -2,9 +2,10 @@ from ai.base_agent import Agent
 from engine.state import BattleState
 from engine.damage import calculate_damage, get_type_multiplier
 
-# Pesos por defecto: [w1, w2, w3, w4, w5, w6]
-# Pueden ser reemplazados por los pesos optimizados del algoritmo genético.
-DEFAULT_WEIGHTS = [0.30, 0.25, 0.25, 0.10, 0.05, 0.05]
+# Pesos por defecto: [w0, w1, w2, w3]
+# Cada peso pondera un diferencial (mi_valor - valor_oponente),
+# por lo que el score es 0 en un estado perfectamente simétrico.
+DEFAULT_WEIGHTS = [0.40, 0.35, 0.15, 0.10]
 
 # Velocidad máxima del roster (Mewtwo y Jolteon, SPE=130) para normalizar
 MAX_SPEED = 130
@@ -14,21 +15,18 @@ class HeuristicAdvancedAgent(Agent):
     """
     Heurística Avanzada — Nivel 3.
 
-    Función de evaluación compuesta (todos los factores normalizados en [0, 1]):
+    Función de evaluación basada en diferenciales (todos en [-1, 1]):
 
-        score = w1 * (vivos_propios / total)
-              + w2 * hp_promedio_propio
-              - w3 * hp_promedio_oponente
-              + w4 * ventaja_de_tipo
-              + w5 * diferencia_de_velocidad_normalizada
-              - w6 * (vivos_oponente / total)
+        score = w0 * (vivos_propios - vivos_oponente) / total
+              + w1 * (hp_promedio_propio - hp_promedio_oponente)
+              + w2 * ventaja_de_tipo            ∈ [0, 1]
+              + w3 * ventaja_de_velocidad        ∈ [-1, 1]
 
-    A diferencia de la Heurística Básica, esta función considera el equipo
-    completo (no solo el Pokémon activo), la ventaja de tipo de los movimientos
-    disponibles y la diferencia de velocidades entre los activos.
+    El estado simétrico produce score = 0.
+    Cada peso expresa la importancia relativa de ese diferencial.
     """
 
-    _LABELS = ["alive", "hp_mio", "hp_opp", "tipo", "vel", "vivos"]
+    _LABELS = ["supervivencia", "hp_diff", "tipo", "velocidad"]
 
     def __init__(self, weights: list[float] | None = None):
         super().__init__("Heurística Avanzada")
@@ -38,7 +36,7 @@ class HeuristicAdvancedAgent(Agent):
         w = self.weights
         w_str = "  ".join(f"{l}:{w[i]:.2f}" for i, l in enumerate(self._LABELS))
         return [
-            "Evalua 6 factores: equipo vivo, HP, tipo, velocidad.",
+            "Evalua 4 diferenciales: supervivencia, HP, tipo, velocidad.",
             f"Pesos: {w_str}",
         ]
 
@@ -50,36 +48,39 @@ class HeuristicAdvancedAgent(Agent):
         opp_team = state.get_team(opp_id)
         total    = len(my_team)
 
-        # w1 — Pokémon vivos propios (normalizado sobre el total del equipo)
-        alive_mine = sum(1 for p in my_team if p.is_alive()) / total
+        # w0 — Diferencial de supervivencia: (vivos_propios - vivos_oponente) / total
+        #       Rango [-1, 1]. Positivo = tengo más Pokémon vivos.
+        alive_diff = (
+            sum(1 for p in my_team  if p.is_alive()) -
+            sum(1 for p in opp_team if p.is_alive())
+        ) / total
 
-        # w2 — HP promedio propio normalizado (incluye caídos con hp_ratio=0)
-        hp_avg_mine = sum(p.hp_ratio() for p in my_team) / total
+        # w1 — Diferencial de HP promedio: hp_propio - hp_oponente
+        #       Rango [-1, 1]. Positivo = mi equipo tiene más vida en promedio.
+        hp_diff = (
+            sum(p.hp_ratio() for p in my_team)  / total -
+            sum(p.hp_ratio() for p in opp_team) / total
+        )
 
-        # w3 — HP promedio oponente normalizado
-        hp_avg_opp = sum(p.hp_ratio() for p in opp_team) / total
-
-        # w4 — Ventaja de tipo: mejor multiplicador disponible, normalizado a [0, 1]
-        #       El máximo posible en nuestro roster es x4 (doble superefectivo)
+        # w2 — Diferencial de tipo: (mi_mejor_mult - mejor_mult_oponente) / 4.0
+        #       Rango [-1, 1]. Positivo = tengo mejor ventaja de tipo que el oponente.
         me  = state.get_active(player_id)
         opp = state.get_active(opp_id)
-        type_adv = self._best_type_advantage(me, opp) / 4.0
+        type_adv = (
+            self._best_type_advantage(me, opp) -
+            self._best_type_advantage(opp, me)
+        ) / 4.0
 
-        # w5 — Diferencia de velocidades normalizada a [-1, 1], luego a [0, 1]
-        speed_diff = (me.speed - opp.speed) / MAX_SPEED          # en [-1, 1]
-        speed_norm = (speed_diff + 1) / 2                         # a [0, 1]
-
-        # w6 — Pokémon vivos del oponente (normalizado)
-        alive_opp = sum(1 for p in opp_team if p.is_alive()) / total
+        # w3 — Ventaja de velocidad: (vel_propia - vel_oponente) / MAX_SPEED
+        #       Rango [-1, 1]. Positivo = soy más rápido (actúo primero).
+        speed_adv = (me.speed - opp.speed) / MAX_SPEED
 
         w = self.weights
         return (
-              w[0] * alive_mine
-            + w[1] * hp_avg_mine
-            - w[2] * hp_avg_opp
-            + w[3] * type_adv
-            + w[4] * speed_norm
-            - w[5] * alive_opp
+              w[0] * alive_diff
+            + w[1] * hp_diff
+            + w[2] * type_adv
+            + w[3] * speed_adv
         )
 
     def _best_type_advantage(self, me, opp) -> float:
