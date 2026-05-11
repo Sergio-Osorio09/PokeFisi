@@ -1,3 +1,4 @@
+import random
 import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT, AI_TURN_DELAY
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
@@ -510,7 +511,8 @@ class BattleScreen:
         self.battle.log.append(turn_header)
         new_lines = [turn_header]
 
-        if p1.speed >= p2.speed:
+        p1_first = p1.speed > p2.speed or (p1.speed == p2.speed and random.random() < 0.5)
+        if p1_first:
             new_lines += self.battle._apply_and_log_action(self.state, 1, action1)
             if not self.state.is_terminal():
                 new_lines += self.battle._apply_and_log_action(self.state, 2, action2)

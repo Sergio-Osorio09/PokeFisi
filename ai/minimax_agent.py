@@ -1,6 +1,7 @@
+import random
 from ai.base_agent import Agent
 from engine.state import BattleState
-from engine.damage import calculate_damage, get_type_multiplier
+from engine.damage import get_type_multiplier
 
 _MAX_SPEED = 130
 
@@ -109,7 +110,8 @@ class MinimaxAgent(Agent):
         me  = state.get_active(player_id)
         opp = state.get_active(opp_id)
 
-        if me.speed >= opp.speed:
+        me_first = me.speed > opp.speed or (me.speed == opp.speed and random.random() < 0.5)
+        if me_first:
             self._apply_action(state, player_id, my_action)
             if not state.is_terminal():
                 self._apply_action(state, opp_id, opp_action)
@@ -130,8 +132,7 @@ class MinimaxAgent(Agent):
         moves    = attacker.get_available_moves()
         idx      = action["move_index"]
         if attacker.is_alive() and idx < len(moves):
-            dmg, _ = calculate_damage(attacker, moves[idx], defender)
-            defender.take_damage(dmg)
+            defender.take_damage(self._sim_damage(attacker, moves[idx], defender))
 
     def _auto_replace(self, state: BattleState, player_id: int):
         if not state.get_active(player_id).is_alive():

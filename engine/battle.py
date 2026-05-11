@@ -1,3 +1,4 @@
+import random
 from engine.state import BattleState
 from engine.damage import calculate_damage
 
@@ -37,10 +38,11 @@ class Battle:
         action1 = self.agent1.choose_action(self.state, 1)
         action2 = self.agent2.choose_action(self.state, 2)
 
-        # Orden por velocidad
+        # Orden por velocidad; empate se resuelve al azar (regla Pokémon)
         p1 = self.state.active_pokemon_p1
         p2 = self.state.active_pokemon_p2
-        if p1.speed >= p2.speed:
+        p1_first = p1.speed > p2.speed or (p1.speed == p2.speed and random.random() < 0.5)
+        if p1_first:
             self._execute_action(1, action1)
             if not self.state.is_terminal():
                 self._execute_action(2, action2)

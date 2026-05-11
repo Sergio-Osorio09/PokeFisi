@@ -1,7 +1,7 @@
 WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 768
 FPS = 60
-K = 0.5
+K = 0.25
 TEAM_SIZE = 3
 
 # Colors

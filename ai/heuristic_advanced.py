@@ -1,6 +1,6 @@
 from ai.base_agent import Agent
 from engine.state import BattleState
-from engine.damage import calculate_damage, get_type_multiplier
+from engine.damage import get_type_multiplier
 
 # Pesos por defecto: [w0, w1, w2, w3]
 # Cada peso pondera un diferencial (mi_valor - valor_oponente),
@@ -117,5 +117,4 @@ class HeuristicAdvancedAgent(Agent):
         defender   = state.get_active(3 - player_id)
         moves      = attacker.get_available_moves()
         if move_index < len(moves):
-            dmg, _ = calculate_damage(attacker, moves[move_index], defender)
-            defender.take_damage(dmg)
+            defender.take_damage(self._sim_damage(attacker, moves[move_index], defender))

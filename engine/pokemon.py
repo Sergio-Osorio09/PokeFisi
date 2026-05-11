@@ -10,11 +10,11 @@ class Pokemon:
         self.image = data.get("image", "")
 
         stats = data["stats"]
-        self.max_hp = stats["hp"]
-        self.current_hp = stats["hp"]
-        self.attack = stats["attack"]
-        self.defense = stats["defense"]
-        self.speed = stats["speed"]
+        self.max_hp  = 2 * stats["hp"]      + 110
+        self.current_hp = self.max_hp
+        self.attack  = 2 * stats["attack"]  + 5
+        self.defense = 2 * stats["defense"] + 5
+        self.speed   = 2 * stats["speed"]   + 5
 
         move_ids = data["move_ids"]
         available = [all_moves[mid] for mid in move_ids if mid in all_moves]

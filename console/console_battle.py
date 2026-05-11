@@ -1,3 +1,4 @@
+import random
 from engine.state import BattleState
 from engine.battle import Battle
 
@@ -94,7 +95,8 @@ def run_console_battle_human_vs_ai(state: BattleState, ai_agent):
         p2 = state.active_pokemon_p2
         new_lines: list[str] = []
 
-        if p1.speed >= p2.speed:
+        p1_first = p1.speed > p2.speed or (p1.speed == p2.speed and random.random() < 0.5)
+        if p1_first:
             new_lines += battle._apply_and_log_action(state, 1, action1)
             if not state.is_terminal():
                 new_lines += battle._apply_and_log_action(state, 2, action2)

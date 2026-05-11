@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from engine.state import BattleState
+from engine.damage import get_type_multiplier
+from config import K
 
 
 class Agent(ABC):
@@ -26,6 +28,14 @@ class Agent(ABC):
 
     def win_rate(self) -> float:
         return self.wins / self.battles if self.battles > 0 else 0.0
+
+    @staticmethod
+    def _sim_damage(attacker, move, defender) -> int:
+        """Daño esperado determinista para simulaciones internas (sin tirada de precisión)."""
+        raw = (attacker.attack / max(1, defender.defense)) * move.base_power - defender.speed * K
+        raw = max(1, raw)
+        mult = get_type_multiplier(move.type, defender.types)
+        return max(0, int(raw * mult * move.accuracy / 100))
 
     def _possible_actions(self, state: BattleState, player_id: int) -> list[dict]:
         actions = []

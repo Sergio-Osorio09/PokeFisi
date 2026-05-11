@@ -1,6 +1,5 @@
 from ai.base_agent import Agent
 from engine.state import BattleState
-from engine.damage import calculate_damage
 
 
 class HeuristicBasicAgent(Agent):
@@ -38,5 +37,4 @@ class HeuristicBasicAgent(Agent):
         defender = state.get_active(3 - player_id)
         moves = attacker.get_available_moves()
         if move_index < len(moves):
-            dmg, _ = calculate_damage(attacker, moves[move_index], defender)
-            defender.take_damage(dmg)
+            defender.take_damage(self._sim_damage(attacker, moves[move_index], defender))
