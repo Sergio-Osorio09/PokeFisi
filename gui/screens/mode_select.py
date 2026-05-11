@@ -74,7 +74,7 @@ class ModeSelect:
             data.append({
                 "name":    name,
                 "desc":    info_lines[0] if info_lines else "",
-                "weights": getattr(a, "weights", None),
+                "weights": None if hasattr(a, "get_visual_stats") else getattr(a, "weights", None),
                 "battles": getattr(a, "battles_trained", None),
                 "wr":      getattr(a, "win_rate_training", None),
                 "stats":   a.get_visual_stats() if hasattr(a, "get_visual_stats") else None,

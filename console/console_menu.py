@@ -13,8 +13,9 @@ def _print_banner():
 ║  1. Humano vs IA                         ║
 ║  2. IA vs IA                             ║
 ║  3. Entrenar Heuristica Avanzada         ║
-║  4. Eliminar pesos entrenados            ║
-║  5. Salir                                ║
+║  4. Entrenar IA Genetica                 ║
+║  5. Eliminar pesos entrenados            ║
+║  6. Salir                                ║
 ╚══════════════════════════════════════════╝""")
 
 
@@ -34,9 +35,12 @@ def start_console():
             _train_flow()
 
         elif choice == "4":
-            delete_trained_flow()
+            _genetic_flow()
 
         elif choice == "5":
+            delete_trained_flow()
+
+        elif choice == "6":
             print("\n¡Hasta luego!\n")
             break
 
@@ -124,6 +128,71 @@ def _train_flow():
             print(f"    {lbl:<14}  {w:.4f}  (base {d:.3f},  {sign}{diff:.4f})")
     else:
         print(f"\n  Pesos: {weights}")
+    print()
+
+
+# ── Entrenamiento genético ────────────────────────────────────────────────────
+
+def _genetic_flow():
+    from ai.genetic_trainer import run_genetic, save_genetic_weights
+    from ai.heuristic_advanced import DEFAULT_WEIGHTS
+
+    print("\n=== Entrenar IA Genetica ===")
+    print("  Parametros configurables (Enter = valor por defecto):\n")
+
+    def ask_int(prompt, default, min_val):
+        while True:
+            raw = input(f"  {prompt} [{default}]: ").strip()
+            if raw == "":
+                return default
+            try:
+                v = int(raw)
+                if v >= min_val:
+                    return v
+                print(f"  [!] Minimo {min_val}.")
+            except ValueError:
+                print("  [!] Ingresa un numero entero.")
+
+    pop_size  = ask_int("Tamaño de poblacion (min. 4)",  20, 4)
+    gens      = ask_int("Numero de generaciones (min. 5)", 30, 5)
+    battles   = ask_int("Batallas por evaluacion (min. 5)", 10, 5)
+
+    labels = ["supervivencia", "hp_diff", "tipo", "velocidad"]
+    total_evals = pop_size * gens
+
+    print(f"\n  Configuracion:")
+    print(f"    Poblacion         : {pop_size} individuos")
+    print(f"    Generaciones      : {gens}")
+    print(f"    Batallas/individuo: {battles}")
+    print(f"    Total evaluaciones: {total_evals * battles} batallas aprox.")
+    print(f"\n  Iniciando evolucion...\n")
+
+    def _callback(gen, total, best_gen, best_global, avg, population):
+        bar_gen = "█" * int(best_gen * 10) + "░" * (10 - int(best_gen * 10))
+        bar_glb = "█" * int(best_global * 10) + "░" * (10 - int(best_global * 10))
+        print(f"  Gen {gen:>3}/{total}  |  "
+              f"Mejor gen: {bar_gen} {best_gen:.0%}  |  "
+              f"Mejor global: {bar_glb} {best_global:.0%}  |  "
+              f"Promedio: {avg:.0%}")
+
+    data = run_genetic(
+        pop_size=pop_size,
+        generations=gens,
+        battles_per_eval=battles,
+        callback=_callback,
+    )
+
+    path = save_genetic_weights(data)
+    w    = data["weights"]
+
+    print(f"\n  Evolucion completada!")
+    print(f"  Guardado en: {path}")
+    print(f"  Fitness final: {data['fitness']:.1%}")
+    print(f"\n  Pesos evolucionados vs base:")
+    for lbl, wv, dv in zip(labels, w, DEFAULT_WEIGHTS):
+        diff = wv - dv
+        sign = "+" if diff >= 0 else ""
+        print(f"    {lbl:<14}  {wv:.4f}  (base {dv:.3f},  {sign}{diff:.4f})")
     print()
 
 

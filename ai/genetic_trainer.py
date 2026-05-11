@@ -1,0 +1,180 @@
+"""
+Entrenador basado en Algoritmos Genéticos.
+
+Optimiza los 4 pesos de HeuristicaAvanzada buscando la combinación
+que maximiza el win-rate en batallas contra HeuristicaBasica.
+"""
+import random
+import json
+import os
+
+from engine.loader import load_moves, build_team, load_all_pokemon
+from engine.state import BattleState
+from engine.battle import Battle
+from ai.heuristic_advanced import HeuristicAdvancedAgent
+from ai.heuristic_basic import HeuristicBasicAgent
+
+_DATA_DIR = "data"
+_N_WEIGHTS = 4
+
+
+# ── Operadores genéticos ──────────────────────────────────────────────────────
+
+def _normalize(weights: list[float]) -> list[float]:
+    total = sum(weights)
+    if total <= 0:
+        return [1 / _N_WEIGHTS] * _N_WEIGHTS
+    return [max(0.0, w / total) for w in weights]
+
+
+def _random_individual() -> list[float]:
+    return _normalize([random.random() for _ in range(_N_WEIGHTS)])
+
+
+def _evaluate(weights: list[float], all_moves: dict,
+              all_ids: list[int], battles: int) -> float:
+    """Fitness = win-rate del individuo vs HeuristicaBasica en 'battles' batallas."""
+    agent    = HeuristicAdvancedAgent(weights=weights)
+    opponent = HeuristicBasicAgent()
+    wins     = 0
+    for _ in range(battles):
+        ids1  = random.sample(all_ids, 3)
+        ids2  = random.sample(all_ids, 3)
+        state = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
+        if Battle(state, agent, opponent).run() == 1:
+            wins += 1
+    return wins / battles
+
+
+def _tournament(population: list, fitnesses: list[float], k: int = 3) -> list[float]:
+    """Selección por torneo: k candidatos aleatorios, gana el de mayor fitness."""
+    candidates = random.sample(range(len(population)), k)
+    best       = max(candidates, key=lambda i: fitnesses[i])
+    return population[best][:]
+
+
+def _crossover(p1: list[float], p2: list[float]) -> list[float]:
+    """Crossover uniforme: cada gen se hereda aleatoriamente de uno de los padres."""
+    child = [p1[i] if random.random() < 0.5 else p2[i] for i in range(_N_WEIGHTS)]
+    return _normalize(child)
+
+
+def _mutate(individual: list[float], rate: float, strength: float) -> list[float]:
+    """Mutación gaussiana: cada gen se perturba con probabilidad 'rate'."""
+    result = individual[:]
+    for i in range(_N_WEIGHTS):
+        if random.random() < rate:
+            result[i] += random.gauss(0, strength)
+            result[i]  = max(0.0, result[i])
+    return _normalize(result)
+
+
+# ── Ciclo principal ───────────────────────────────────────────────────────────
+
+def run_genetic(pop_size: int = 20,
+                generations: int = 30,
+                battles_per_eval: int = 10,
+                mutation_rate: float = 0.15,
+                mutation_strength: float = 0.10,
+                elite_k: int = 2,
+                callback=None) -> dict:
+    """
+    Ejecuta el algoritmo genético completo.
+
+    Parameters
+    ----------
+    pop_size          : número de individuos por generación
+    generations       : número de generaciones a evolucionar
+    battles_per_eval  : batallas que juega cada individuo para medir su fitness
+    mutation_rate     : probabilidad de mutar cada gen  [0, 1]
+    mutation_strength : desviación estándar de la mutación gaussiana
+    elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
+    callback          : función opcional llamada al final de cada generación con
+                        (gen, total, best_gen_fit, best_global_fit, avg_fit, population)
+
+    Returns
+    -------
+    dict con weights, fitness, historial y parámetros usados.
+    """
+    all_moves = load_moves()
+    all_ids   = [p["id"] for p in load_all_pokemon()]
+
+    # Inicialización: población aleatoria
+    population = [_random_individual() for _ in range(pop_size)]
+
+    best_weights  = None
+    best_fitness  = -1.0
+    history: list[dict] = []
+
+    for gen in range(1, generations + 1):
+
+        # ── 1. Evaluación ─────────────────────────────────────────────────────
+        fitnesses = [_evaluate(w, all_moves, all_ids, battles_per_eval)
+                     for w in population]
+
+        gen_best_idx = max(range(pop_size), key=lambda i: fitnesses[i])
+        gen_best_fit = fitnesses[gen_best_idx]
+        avg_fit      = sum(fitnesses) / pop_size
+
+        # Actualizar mejor global
+        if gen_best_fit > best_fitness:
+            best_fitness = gen_best_fit
+            best_weights = population[gen_best_idx][:]
+
+        history.append({
+            "gen":         gen,
+            "best_gen":    round(gen_best_fit, 4),
+            "best_global": round(best_fitness, 4),
+            "avg":         round(avg_fit, 4),
+            "best_weights": best_weights[:],
+        })
+
+        if callback:
+            callback(gen, generations, gen_best_fit, best_fitness,
+                     avg_fit, population[:])
+
+        # ── 2. Elitismo ───────────────────────────────────────────────────────
+        sorted_pairs = sorted(zip(fitnesses, population), reverse=True)
+        new_pop      = [ind for _, ind in sorted_pairs[:elite_k]]
+
+        # ── 3. Reproducción ───────────────────────────────────────────────────
+        while len(new_pop) < pop_size:
+            p1    = _tournament(population, fitnesses)
+            p2    = _tournament(population, fitnesses)
+            child = _crossover(p1, p2)
+            child = _mutate(child, mutation_rate, mutation_strength)
+            new_pop.append(child)
+
+        population = new_pop
+
+    return {
+        "weights":           best_weights,
+        "fitness":           best_fitness,
+        "generations":       generations,
+        "pop_size":          pop_size,
+        "battles_per_eval":  battles_per_eval,
+        "mutation_rate":     mutation_rate,
+        "mutation_strength": mutation_strength,
+        "elite_k":           elite_k,
+        "history":           history,
+    }
+
+
+# ── I/O ───────────────────────────────────────────────────────────────────────
+
+def save_genetic_weights(data: dict) -> str:
+    os.makedirs(_DATA_DIR, exist_ok=True)
+    tag  = f"g{data['generations']}_p{data['pop_size']}"
+    path = os.path.join(_DATA_DIR, f"genetic_{tag}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return path
+
+
+def find_genetic_weights():
+    """Genera las rutas de archivos genetic_*.json en data/."""
+    if not os.path.isdir(_DATA_DIR):
+        return
+    for fname in sorted(os.listdir(_DATA_DIR)):
+        if fname.startswith("genetic_") and fname.endswith(".json"):
+            yield os.path.join(_DATA_DIR, fname)
