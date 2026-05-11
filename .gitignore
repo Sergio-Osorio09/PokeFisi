@@ -23,11 +23,9 @@ data/weights_*.json
 experiments/results/
 
 # Directorios vacíos de assets (solo se sube la estructura)
-assets/images/pokemon/*
 assets/images/backgrounds/*
 assets/images/ui/*
 assets/fonts/*
-!assets/images/pokemon/.gitkeep
 !assets/images/backgrounds/.gitkeep
 !assets/images/ui/.gitkeep
 !assets/fonts/.gitkeep

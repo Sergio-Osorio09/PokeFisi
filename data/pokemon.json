@@ -1,182 +1,705 @@
 [
   {
-    "id": 1, "name": "Pikachu", "types": ["Electric"],
+    "id": 1,
+    "name": "Pikachu",
+    "types": [
+      "Electric"
+    ],
     "image": "assets/images/pokemon/pikachu.png",
-    "stats": {"hp": 35, "attack": 55, "defense": 40, "speed": 90},
-    "move_ids": [13, 14, 15, 16, 17, 67]
+    "stats": {
+      "hp": 35,
+      "attack": 55,
+      "defense": 40,
+      "speed": 90
+    },
+    "move_ids": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      67
+    ],
+    "image_back": "assets/images/pokemon/back/pikachu.png"
   },
   {
-    "id": 2, "name": "Charizard", "types": ["Fire", "Flying"],
+    "id": 2,
+    "name": "Charizard",
+    "types": [
+      "Fire",
+      "Flying"
+    ],
     "image": "assets/images/pokemon/charizard.png",
-    "stats": {"hp": 78, "attack": 84, "defense": 78, "speed": 100},
-    "move_ids": [1, 2, 4, 5, 42, 46, 49]
+    "stats": {
+      "hp": 78,
+      "attack": 84,
+      "defense": 78,
+      "speed": 100
+    },
+    "move_ids": [
+      1,
+      2,
+      4,
+      5,
+      42,
+      46,
+      49
+    ],
+    "image_back": "assets/images/pokemon/back/charizard.png"
   },
   {
-    "id": 3, "name": "Blastoise", "types": ["Water"],
+    "id": 3,
+    "name": "Blastoise",
+    "types": [
+      "Water"
+    ],
     "image": "assets/images/pokemon/blastoise.png",
-    "stats": {"hp": 79, "attack": 83, "defense": 100, "speed": 78},
-    "move_ids": [7, 9, 10, 11, 12, 65]
+    "stats": {
+      "hp": 79,
+      "attack": 83,
+      "defense": 100,
+      "speed": 78
+    },
+    "move_ids": [
+      7,
+      9,
+      10,
+      11,
+      12,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/blastoise.png"
   },
   {
-    "id": 4, "name": "Venusaur", "types": ["Grass", "Poison"],
+    "id": 4,
+    "name": "Venusaur",
+    "types": [
+      "Grass",
+      "Poison"
+    ],
     "image": "assets/images/pokemon/venusaur.png",
-    "stats": {"hp": 80, "attack": 82, "defense": 83, "speed": 80},
-    "move_ids": [19, 20, 22, 23, 33, 35]
+    "stats": {
+      "hp": 80,
+      "attack": 82,
+      "defense": 83,
+      "speed": 80
+    },
+    "move_ids": [
+      19,
+      20,
+      22,
+      23,
+      33,
+      35
+    ],
+    "image_back": "assets/images/pokemon/back/venusaur.png"
   },
   {
-    "id": 5, "name": "Mewtwo", "types": ["Psychic"],
+    "id": 5,
+    "name": "Mewtwo",
+    "types": [
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/mewtwo.png",
-    "stats": {"hp": 106, "attack": 110, "defense": 90, "speed": 130},
-    "move_ids": [25, 27, 29, 42, 49, 65]
+    "stats": {
+      "hp": 106,
+      "attack": 110,
+      "defense": 90,
+      "speed": 130
+    },
+    "move_ids": [
+      25,
+      27,
+      29,
+      42,
+      49,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/mewtwo.png"
   },
   {
-    "id": 6, "name": "Gengar", "types": ["Ghost", "Poison"],
+    "id": 6,
+    "name": "Gengar",
+    "types": [
+      "Ghost",
+      "Poison"
+    ],
     "image": "assets/images/pokemon/gengar.png",
-    "stats": {"hp": 60, "attack": 65, "defense": 60, "speed": 110},
-    "move_ids": [30, 31, 32, 33, 25, 34]
+    "stats": {
+      "hp": 60,
+      "attack": 65,
+      "defense": 60,
+      "speed": 110
+    },
+    "move_ids": [
+      30,
+      31,
+      32,
+      33,
+      25,
+      34
+    ],
+    "image_back": "assets/images/pokemon/back/gengar.png"
   },
   {
-    "id": 7, "name": "Machamp", "types": ["Fighting"],
+    "id": 7,
+    "name": "Machamp",
+    "types": [
+      "Fighting"
+    ],
     "image": "assets/images/pokemon/machamp.png",
-    "stats": {"hp": 90, "attack": 130, "defense": 80, "speed": 55},
-    "move_ids": [36, 37, 38, 40, 41, 65]
+    "stats": {
+      "hp": 90,
+      "attack": 130,
+      "defense": 80,
+      "speed": 55
+    },
+    "move_ids": [
+      36,
+      37,
+      38,
+      40,
+      41,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/machamp.png"
   },
   {
-    "id": 8, "name": "Alakazam", "types": ["Psychic"],
+    "id": 8,
+    "name": "Alakazam",
+    "types": [
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/alakazam.png",
-    "stats": {"hp": 55, "attack": 50, "defense": 45, "speed": 120},
-    "move_ids": [25, 26, 27, 28, 29, 65]
+    "stats": {
+      "hp": 55,
+      "attack": 50,
+      "defense": 45,
+      "speed": 120
+    },
+    "move_ids": [
+      25,
+      26,
+      27,
+      28,
+      29,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/alakazam.png"
   },
   {
-    "id": 9, "name": "Dragonite", "types": ["Dragon", "Flying"],
+    "id": 9,
+    "name": "Dragonite",
+    "types": [
+      "Dragon",
+      "Flying"
+    ],
     "image": "assets/images/pokemon/dragonite.png",
-    "stats": {"hp": 91, "attack": 134, "defense": 95, "speed": 80},
-    "move_ids": [42, 43, 44, 46, 47, 38, 65]
+    "stats": {
+      "hp": 91,
+      "attack": 134,
+      "defense": 95,
+      "speed": 80
+    },
+    "move_ids": [
+      42,
+      43,
+      44,
+      46,
+      47,
+      38,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/dragonite.png"
   },
   {
-    "id": 10, "name": "Lapras", "types": ["Water", "Ice"],
+    "id": 10,
+    "name": "Lapras",
+    "types": [
+      "Water",
+      "Ice"
+    ],
     "image": "assets/images/pokemon/lapras.png",
-    "stats": {"hp": 130, "attack": 85, "defense": 80, "speed": 60},
-    "move_ids": [7, 9, 11, 50, 51, 52]
+    "stats": {
+      "hp": 130,
+      "attack": 85,
+      "defense": 80,
+      "speed": 60
+    },
+    "move_ids": [
+      7,
+      9,
+      11,
+      50,
+      51,
+      52
+    ],
+    "image_back": "assets/images/pokemon/back/lapras.png"
   },
   {
-    "id": 11, "name": "Snorlax", "types": ["Normal"],
+    "id": 11,
+    "name": "Snorlax",
+    "types": [
+      "Normal"
+    ],
     "image": "assets/images/pokemon/snorlax.png",
-    "stats": {"hp": 160, "attack": 110, "defense": 65, "speed": 30},
-    "move_ids": [63, 64, 65, 66, 38, 54]
+    "stats": {
+      "hp": 160,
+      "attack": 110,
+      "defense": 65,
+      "speed": 30
+    },
+    "move_ids": [
+      63,
+      64,
+      65,
+      66,
+      38,
+      54
+    ],
+    "image_back": "assets/images/pokemon/back/snorlax.png"
   },
   {
-    "id": 12, "name": "Arcanine", "types": ["Fire"],
+    "id": 12,
+    "name": "Arcanine",
+    "types": [
+      "Fire"
+    ],
     "image": "assets/images/pokemon/arcanine.png",
-    "stats": {"hp": 90, "attack": 110, "defense": 80, "speed": 95},
-    "move_ids": [1, 2, 5, 6, 63, 65]
+    "stats": {
+      "hp": 90,
+      "attack": 110,
+      "defense": 80,
+      "speed": 95
+    },
+    "move_ids": [
+      1,
+      2,
+      5,
+      6,
+      63,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/arcanine.png"
   },
   {
-    "id": 13, "name": "Gyarados", "types": ["Water", "Flying"],
+    "id": 13,
+    "name": "Gyarados",
+    "types": [
+      "Water",
+      "Flying"
+    ],
     "image": "assets/images/pokemon/gyarados.png",
-    "stats": {"hp": 95, "attack": 125, "defense": 79, "speed": 81},
-    "move_ids": [7, 9, 10, 44, 46, 49]
+    "stats": {
+      "hp": 95,
+      "attack": 125,
+      "defense": 79,
+      "speed": 81
+    },
+    "move_ids": [
+      7,
+      9,
+      10,
+      44,
+      46,
+      49
+    ],
+    "image_back": "assets/images/pokemon/back/gyarados.png"
   },
   {
-    "id": 14, "name": "Jolteon", "types": ["Electric"],
+    "id": 14,
+    "name": "Jolteon",
+    "types": [
+      "Electric"
+    ],
     "image": "assets/images/pokemon/jolteon.png",
-    "stats": {"hp": 65, "attack": 65, "defense": 60, "speed": 130},
-    "move_ids": [13, 14, 16, 17, 18, 67]
+    "stats": {
+      "hp": 65,
+      "attack": 65,
+      "defense": 60,
+      "speed": 130
+    },
+    "move_ids": [
+      13,
+      14,
+      16,
+      17,
+      18,
+      67
+    ],
+    "image_back": "assets/images/pokemon/back/jolteon.png"
   },
   {
-    "id": 15, "name": "Vaporeon", "types": ["Water"],
+    "id": 15,
+    "name": "Vaporeon",
+    "types": [
+      "Water"
+    ],
     "image": "assets/images/pokemon/vaporeon.png",
-    "stats": {"hp": 130, "attack": 65, "defense": 60, "speed": 65},
-    "move_ids": [7, 9, 11, 12, 50, 65]
+    "stats": {
+      "hp": 130,
+      "attack": 65,
+      "defense": 60,
+      "speed": 65
+    },
+    "move_ids": [
+      7,
+      9,
+      11,
+      12,
+      50,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/vaporeon.png"
   },
   {
-    "id": 16, "name": "Flareon", "types": ["Fire"],
+    "id": 16,
+    "name": "Flareon",
+    "types": [
+      "Fire"
+    ],
     "image": "assets/images/pokemon/flareon.png",
-    "stats": {"hp": 65, "attack": 130, "defense": 60, "speed": 65},
-    "move_ids": [1, 2, 5, 6, 63, 65]
+    "stats": {
+      "hp": 65,
+      "attack": 130,
+      "defense": 60,
+      "speed": 65
+    },
+    "move_ids": [
+      1,
+      2,
+      5,
+      6,
+      63,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/flareon.png"
   },
   {
-    "id": 17, "name": "Rhydon", "types": ["Ground", "Rock"],
+    "id": 17,
+    "name": "Rhydon",
+    "types": [
+      "Ground",
+      "Rock"
+    ],
     "image": "assets/images/pokemon/rhydon.png",
-    "stats": {"hp": 105, "attack": 130, "defense": 120, "speed": 40},
-    "move_ids": [54, 55, 56, 57, 58, 38]
+    "stats": {
+      "hp": 105,
+      "attack": 130,
+      "defense": 120,
+      "speed": 40
+    },
+    "move_ids": [
+      54,
+      55,
+      56,
+      57,
+      58,
+      38
+    ],
+    "image_back": "assets/images/pokemon/back/rhydon.png"
   },
   {
-    "id": 18, "name": "Exeggutor", "types": ["Grass", "Psychic"],
+    "id": 18,
+    "name": "Exeggutor",
+    "types": [
+      "Grass",
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/exeggutor.png",
-    "stats": {"hp": 95, "attack": 95, "defense": 85, "speed": 55},
-    "move_ids": [19, 23, 24, 25, 26, 33]
+    "stats": {
+      "hp": 95,
+      "attack": 95,
+      "defense": 85,
+      "speed": 55
+    },
+    "move_ids": [
+      19,
+      23,
+      24,
+      25,
+      26,
+      33
+    ],
+    "image_back": "assets/images/pokemon/back/exeggutor.png"
   },
   {
-    "id": 19, "name": "Starmie", "types": ["Water", "Psychic"],
+    "id": 19,
+    "name": "Starmie",
+    "types": [
+      "Water",
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/starmie.png",
-    "stats": {"hp": 60, "attack": 75, "defense": 85, "speed": 115},
-    "move_ids": [7, 9, 11, 25, 26, 50]
+    "stats": {
+      "hp": 60,
+      "attack": 75,
+      "defense": 85,
+      "speed": 115
+    },
+    "move_ids": [
+      7,
+      9,
+      11,
+      25,
+      26,
+      50
+    ],
+    "image_back": "assets/images/pokemon/back/starmie.png"
   },
   {
-    "id": 20, "name": "Tauros", "types": ["Normal"],
+    "id": 20,
+    "name": "Tauros",
+    "types": [
+      "Normal"
+    ],
     "image": "assets/images/pokemon/tauros.png",
-    "stats": {"hp": 75, "attack": 100, "defense": 95, "speed": 110},
-    "move_ids": [63, 64, 65, 66, 54, 57]
+    "stats": {
+      "hp": 75,
+      "attack": 100,
+      "defense": 95,
+      "speed": 110
+    },
+    "move_ids": [
+      63,
+      64,
+      65,
+      66,
+      54,
+      57
+    ],
+    "image_back": "assets/images/pokemon/back/tauros.png"
   },
   {
-    "id": 21, "name": "Scyther", "types": ["Bug", "Flying"],
+    "id": 21,
+    "name": "Scyther",
+    "types": [
+      "Bug",
+      "Flying"
+    ],
     "image": "assets/images/pokemon/scyther.png",
-    "stats": {"hp": 70, "attack": 110, "defense": 80, "speed": 105},
-    "move_ids": [60, 61, 46, 47, 48, 38]
+    "stats": {
+      "hp": 70,
+      "attack": 110,
+      "defense": 80,
+      "speed": 105
+    },
+    "move_ids": [
+      60,
+      61,
+      46,
+      47,
+      48,
+      38
+    ],
+    "image_back": "assets/images/pokemon/back/scyther.png"
   },
   {
-    "id": 22, "name": "Pinsir", "types": ["Bug"],
+    "id": 22,
+    "name": "Pinsir",
+    "types": [
+      "Bug"
+    ],
     "image": "assets/images/pokemon/pinsir.png",
-    "stats": {"hp": 65, "attack": 125, "defense": 100, "speed": 85},
-    "move_ids": [60, 61, 62, 38, 54, 65]
+    "stats": {
+      "hp": 65,
+      "attack": 125,
+      "defense": 100,
+      "speed": 85
+    },
+    "move_ids": [
+      60,
+      61,
+      62,
+      38,
+      54,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/pinsir.png"
   },
   {
-    "id": 23, "name": "Electabuzz", "types": ["Electric"],
+    "id": 23,
+    "name": "Electabuzz",
+    "types": [
+      "Electric"
+    ],
     "image": "assets/images/pokemon/electabuzz.png",
-    "stats": {"hp": 65, "attack": 83, "defense": 57, "speed": 105},
-    "move_ids": [13, 14, 16, 17, 18, 38]
+    "stats": {
+      "hp": 65,
+      "attack": 83,
+      "defense": 57,
+      "speed": 105
+    },
+    "move_ids": [
+      13,
+      14,
+      16,
+      17,
+      18,
+      38
+    ],
+    "image_back": "assets/images/pokemon/back/electabuzz.png"
   },
   {
-    "id": 24, "name": "Magmar", "types": ["Fire"],
+    "id": 24,
+    "name": "Magmar",
+    "types": [
+      "Fire"
+    ],
     "image": "assets/images/pokemon/magmar.png",
-    "stats": {"hp": 65, "attack": 95, "defense": 57, "speed": 93},
-    "move_ids": [1, 2, 4, 5, 38, 63]
+    "stats": {
+      "hp": 65,
+      "attack": 95,
+      "defense": 57,
+      "speed": 93
+    },
+    "move_ids": [
+      1,
+      2,
+      4,
+      5,
+      38,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/magmar.png"
   },
   {
-    "id": 25, "name": "Kangaskhan", "types": ["Normal"],
+    "id": 25,
+    "name": "Kangaskhan",
+    "types": [
+      "Normal"
+    ],
     "image": "assets/images/pokemon/kangaskhan.png",
-    "stats": {"hp": 105, "attack": 95, "defense": 80, "speed": 90},
-    "move_ids": [63, 64, 65, 66, 36, 54]
+    "stats": {
+      "hp": 105,
+      "attack": 95,
+      "defense": 80,
+      "speed": 90
+    },
+    "move_ids": [
+      63,
+      64,
+      65,
+      66,
+      36,
+      54
+    ],
+    "image_back": "assets/images/pokemon/back/kangaskhan.png"
   },
   {
-    "id": 26, "name": "Mr. Mime", "types": ["Psychic"],
+    "id": 26,
+    "name": "Mr. Mime",
+    "types": [
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/mr_mime.png",
-    "stats": {"hp": 40, "attack": 45, "defense": 65, "speed": 90},
-    "move_ids": [25, 26, 27, 28, 70, 71]
+    "stats": {
+      "hp": 40,
+      "attack": 45,
+      "defense": 65,
+      "speed": 90
+    },
+    "move_ids": [
+      25,
+      26,
+      27,
+      28,
+      70,
+      71
+    ],
+    "image_back": "assets/images/pokemon/back/mr_mime.png"
   },
   {
-    "id": 27, "name": "Hitmonlee", "types": ["Fighting"],
+    "id": 27,
+    "name": "Hitmonlee",
+    "types": [
+      "Fighting"
+    ],
     "image": "assets/images/pokemon/hitmonlee.png",
-    "stats": {"hp": 50, "attack": 120, "defense": 53, "speed": 87},
-    "move_ids": [36, 38, 40, 41, 54, 67]
+    "stats": {
+      "hp": 50,
+      "attack": 120,
+      "defense": 53,
+      "speed": 87
+    },
+    "move_ids": [
+      36,
+      38,
+      40,
+      41,
+      54,
+      67
+    ],
+    "image_back": "assets/images/pokemon/back/hitmonlee.png"
   },
   {
-    "id": 28, "name": "Hitmonchan", "types": ["Fighting"],
+    "id": 28,
+    "name": "Hitmonchan",
+    "types": [
+      "Fighting"
+    ],
     "image": "assets/images/pokemon/hitmonchan.png",
-    "stats": {"hp": 50, "attack": 105, "defense": 79, "speed": 76},
-    "move_ids": [36, 37, 38, 41, 52, 16]
+    "stats": {
+      "hp": 50,
+      "attack": 105,
+      "defense": 79,
+      "speed": 76
+    },
+    "move_ids": [
+      36,
+      37,
+      38,
+      41,
+      52,
+      16
+    ],
+    "image_back": "assets/images/pokemon/back/hitmonchan.png"
   },
   {
-    "id": 29, "name": "Slowbro", "types": ["Water", "Psychic"],
+    "id": 29,
+    "name": "Slowbro",
+    "types": [
+      "Water",
+      "Psychic"
+    ],
     "image": "assets/images/pokemon/slowbro.png",
-    "stats": {"hp": 95, "attack": 75, "defense": 110, "speed": 30},
-    "move_ids": [7, 9, 11, 25, 26, 50]
+    "stats": {
+      "hp": 95,
+      "attack": 75,
+      "defense": 110,
+      "speed": 30
+    },
+    "move_ids": [
+      7,
+      9,
+      11,
+      25,
+      26,
+      50
+    ],
+    "image_back": "assets/images/pokemon/back/slowbro.png"
   },
   {
-    "id": 30, "name": "Clefable", "types": ["Fairy"],
+    "id": 30,
+    "name": "Clefable",
+    "types": [
+      "Fairy"
+    ],
     "image": "assets/images/pokemon/clefable.png",
-    "stats": {"hp": 95, "attack": 70, "defense": 73, "speed": 60},
-    "move_ids": [70, 71, 72, 25, 63, 65]
+    "stats": {
+      "hp": 95,
+      "attack": 70,
+      "defense": 73,
+      "speed": 60
+    },
+    "move_ids": [
+      70,
+      71,
+      72,
+      25,
+      63,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/clefable.png"
   }
 ]

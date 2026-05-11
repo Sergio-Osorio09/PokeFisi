@@ -208,9 +208,9 @@ class BattleScreen:
         p2 = self.state.active_pokemon_p2
         p1 = self.state.active_pokemon_p1
 
-        # Sprites
-        surface.blit(get_pokemon_image(p2.image, (P2_SPR_W, P2_SPR_H)), (P2_SPR_X, P2_SPR_Y))
-        surface.blit(get_pokemon_image(p1.image, (P1_SPR_W, P1_SPR_H)), (P1_SPR_X, P1_SPR_Y))
+        # Sprites — P2 de frente, P1 de espaldas (vista clásica Pokémon)
+        surface.blit(get_pokemon_image(p2.image,      (P2_SPR_W, P2_SPR_H)), (P2_SPR_X, P2_SPR_Y))
+        surface.blit(get_pokemon_image(p1.image_back, (P1_SPR_W, P1_SPR_H)), (P1_SPR_X, P1_SPR_Y))
 
         # Info flotante
         self._draw_info(surface, p2, self.label2, self.state.player2_team, self._seen_p2,

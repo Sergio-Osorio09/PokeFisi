@@ -7,7 +7,8 @@ class Pokemon:
         self.id = data["id"]
         self.name = data["name"]
         self.types = data["types"]
-        self.image = data.get("image", "")
+        self.image      = data.get("image", "")
+        self.image_back = data.get("image_back", "")
 
         stats = data["stats"]
         self.max_hp  = 2 * stats["hp"]      + 110
