@@ -8,11 +8,14 @@ from ai.random_agent import RandomAgent
 from ai.heuristic_basic import HeuristicBasicAgent
 from ai.heuristic_advanced import HeuristicAdvancedAgent
 from ai.heuristic_trained import HeuristicTrainedAgent, find_trained_weights
+from ai.minimax_agent import MinimaxAgent
 
 _BASE: list[tuple[str, object]] = [
     ("Agente Aleatorio",    lambda: RandomAgent()),
     ("Heuristica Basica",   lambda: HeuristicBasicAgent()),
     ("Heuristica Avanzada", lambda: HeuristicAdvancedAgent()),
+    ("Minimax d=2",         lambda: MinimaxAgent(depth=2)),
+    ("Minimax d=3",         lambda: MinimaxAgent(depth=3)),
 ]
 
 
