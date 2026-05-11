@@ -72,11 +72,12 @@ class ModeSelect:
             a = factory()
             info_lines = a.get_info_lines()
             data.append({
-                "name":     name,
-                "desc":     info_lines[0] if info_lines else "",
-                "weights":  getattr(a, "weights", None),
-                "battles":  getattr(a, "battles_trained", None),
-                "wr":       getattr(a, "win_rate_training", None),
+                "name":    name,
+                "desc":    info_lines[0] if info_lines else "",
+                "weights": getattr(a, "weights", None),
+                "battles": getattr(a, "battles_trained", None),
+                "wr":      getattr(a, "win_rate_training", None),
+                "stats":   a.get_visual_stats() if hasattr(a, "get_visual_stats") else None,
             })
         return data
 
@@ -99,6 +100,34 @@ class ModeSelect:
         # Descripción
         desc_surf = self.font_info.render(d["desc"], True, (170, 170, 170))
         surface.blit(desc_surf, desc_surf.get_rect(centerx=col_cx, top=INFO_Y))
+
+        # Tabla visual de capacidades (Minimax y similares)
+        if d["stats"] is not None:
+            BAR_BLOCKS = 4
+            BLOCK_W, BLOCK_H, BLOCK_GAP = 14, 9, 3
+            LBL_RIGHT = col_cx - 8     # etiqueta alineada a la derecha de este x
+            BAR_X     = col_cx         # barra empieza aquí
+            TXT_X     = BAR_X + BAR_BLOCKS * (BLOCK_W + BLOCK_GAP) + 6
+
+            for i, (label, filled, total, extra_txt) in enumerate(d["stats"]):
+                y = WEIGHTS_Y + i * (WEIGHT_STEP + 4)
+
+                # Etiqueta alineada a la derecha
+                lbl_surf = self.font_wt.render(f"{label}:", True, (200, 200, 200))
+                surface.blit(lbl_surf, lbl_surf.get_rect(right=LBL_RIGHT, top=y))
+
+                # Bloques de barra
+                for b in range(total):
+                    bx = BAR_X + b * (BLOCK_W + BLOCK_GAP)
+                    color = (100, 160, 255) if b < filled else (45, 55, 80)
+                    pygame.draw.rect(surface, color,
+                                     pygame.Rect(bx, y + 1, BLOCK_W, BLOCK_H),
+                                     border_radius=2)
+
+                # Texto a la derecha de la barra
+                if extra_txt:
+                    txt_surf = self.font_wt.render(extra_txt, True, (180, 200, 255))
+                    surface.blit(txt_surf, (TXT_X, y))
 
         # Pesos en vertical
         if d["weights"] is not None:

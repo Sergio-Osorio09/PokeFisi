@@ -28,12 +28,24 @@ class MinimaxAgent(Agent):
         super().__init__(f"Minimax d={depth}")
         self.depth = depth
 
+    _MS_PER_DEPTH = {2: 50, 3: 280, 4: 1800}
+
     def get_info_lines(self) -> list[str]:
-        w = self._WEIGHTS
-        w_str = "  ".join(f"{l}:{w[i]:.2f}" for i, l in enumerate(self._LABELS))
+        d   = self.depth
+        ms  = self._MS_PER_DEPTH.get(d, d * 200)
         return [
-            f"Minimax + poda alfa-beta, profundidad {self.depth} turno(s).",
-            f"Pesos heurísticos: {w_str}",
+            f"Minimax + poda alfa-beta, profundidad {d} turno(s).",
+            f"Profundidad: {d}/4   Velocidad: ~{ms}ms/turno",
+        ]
+
+    def get_visual_stats(self) -> list[tuple]:
+        """Datos estructurados para la GUI: [(label, filled, total, texto_extra)]."""
+        d  = self.depth
+        ms = self._MS_PER_DEPTH.get(d, d * 200)
+        return [
+            ("Profundidad", min(d, 4),     4, f"{d} turno(s)"),
+            ("Velocidad",   max(1, 5 - d), 4, f"~{ms}ms/turno"),
+            ("Precision",   min(d + 1, 4), 4, ""),
         ]
 
     # ── Punto de entrada ──────────────────────────────────────────────────────
