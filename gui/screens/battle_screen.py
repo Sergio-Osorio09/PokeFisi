@@ -3,16 +3,17 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT, AI_TURN_DELAY
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
 from gui.components.battle_log import BattleLog
+from gui.components.button import Button
 from engine.state import BattleState
 from engine.battle import Battle
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 FIELD_H = 455
 
-# Enemigo (P2) — arriba derecha
-P2_SPR_X, P2_SPR_Y  = 615,  65
-P2_SPR_W, P2_SPR_H  = 132, 132
-P2_INFO_X, P2_INFO_Y = 475,  22
+# Enemigo (P2) — info arriba del todo, sprite debajo de la info
+P2_SPR_X, P2_SPR_Y  = 310, 145
+P2_SPR_W, P2_SPR_H  = 152, 152
+P2_INFO_X, P2_INFO_Y = 310,  18
 
 # Jugador (P1) — abajo izquierda  (sprite bajado para que la info quepa sin solaparse)
 P1_SPR_X, P1_SPR_Y  = 55, 305
@@ -24,6 +25,13 @@ ACT_X = 238   # a la derecha del sprite P1 (termina en x≈203)
 ACT_Y = 200   # por debajo del sprite P2 (termina en y≈197)
 ACT_W = 230
 ACT_H = 86
+
+# Paneles de cerebro IA — columna derecha vacía
+BRAIN_X  = 548
+BRAIN_W  = WINDOW_WIDTH - BRAIN_X - 8   # ≈ 468 px
+BRAIN_H  = (FIELD_H - 14) // 2          # ≈ 220 px cada uno
+BRAIN_P2_Y = 5
+BRAIN_P1_Y = BRAIN_P2_Y + BRAIN_H + 4
 
 # Panel inferior
 PANEL_Y = FIELD_H + 2
@@ -149,6 +157,14 @@ class BattleScreen:
         self._seen_p1: set[int] = {self.state.active_index_p1}
         self._seen_p2: set[int] = {self.state.active_index_p2}
 
+        # Pausa (solo AI vs AI)
+        self._paused     = False
+        self._btn_pause  = Button(
+            (BTN_X, PANEL_Y + 10, BTN_W, 50),
+            "PAUSAR", font_size=19,
+            color=(40, 100, 60), hover_color=(60, 150, 90),
+        )
+
     def _build_buttons(self):
         self.move_buttons.clear()
         moves = self.state.active_pokemon_p1.get_available_moves()
@@ -164,6 +180,9 @@ class BattleScreen:
         if self.finished or self.state.is_terminal():
             self.finished = True
             self.winner   = self.state.get_winner()
+            return
+
+        if self._paused:
             return
 
         if self.mode == "ai_vs_ai":
@@ -218,6 +237,12 @@ class BattleScreen:
         self._draw_info(surface, p1, self.label1, self.state.player1_team, self._seen_p1,
                         P1_INFO_X, P1_INFO_Y, bar_w=210, last_move=self._last_move_p1)
 
+        # Paneles de cerebro IA
+        self._draw_brain_panel(surface, self.agent2, 2,
+                               BRAIN_X, BRAIN_P2_Y, BRAIN_W, BRAIN_H)
+        self._draw_brain_panel(surface, self.agent1, 1,
+                               BRAIN_X, BRAIN_P1_Y, BRAIN_W, BRAIN_H)
+
         # Notificación de cambio
         if self._notify_timer > 0 and self._notify_pokemon:
             self._draw_switch_notify(surface)
@@ -227,6 +252,14 @@ class BattleScreen:
         if self.mode == "human_vs_ai" and not self.finished:
             for btn in self.move_buttons:
                 btn.draw(surface)
+
+        if self.mode == "ai_vs_ai" and not self.finished:
+            self._btn_pause.text  = "REANUDAR" if self._paused else "PAUSAR"
+            self._btn_pause.color = (100, 40, 40) if self._paused else (40, 100, 60)
+            self._btn_pause.draw(surface)
+
+        if self._paused:
+            self._draw_paused_overlay(surface)
             self.switch_btn.draw(surface)
 
         if self.finished:
@@ -325,14 +358,14 @@ class BattleScreen:
                 except (IndexError, ValueError):
                     pass
 
-    # ── Notificación de cambio (columna central, sin tapar sprites) ───────────
+    # ── Notificación de cambio (esquina superior izquierda) ──────────────────
     def _draw_switch_notify(self, surface):
         pokemon = self._notify_pokemon
         player  = self._notify_player
         pw, ph  = ACT_W, ACT_H
 
-        # Posición: columna central del campo  (x=238, y=200)
-        px, py = ACT_X, ACT_Y
+        # Posición: esquina superior izquierda
+        px, py = 15, 15
 
         alpha = min(255, int(255 * self._notify_timer / NOTIFY_DUR * 2))
 
@@ -348,6 +381,118 @@ class BattleScreen:
         name = self.fn_notify.render(pokemon.name, True, WHITE)
         surface.blit(lbl,  (px + 78, py + 20))
         surface.blit(name, (px + 78, py + 38))
+
+    # ── Overlay de pausa ─────────────────────────────────────────────────────
+    def _draw_paused_overlay(self, surface):
+        ow, oh = 200, 50
+        ox = BRAIN_X + (BRAIN_W - ow) // 2
+        oy = FIELD_H // 2 - oh // 2
+        overlay = pygame.Surface((ow, oh), pygame.SRCALPHA)
+        overlay.fill((10, 10, 30, 200))
+        surface.blit(overlay, (ox, oy))
+        pygame.draw.rect(surface, (255, 200, 0), (ox, oy, ow, oh), 2, border_radius=6)
+        txt = get_font(24).render("⏸  PAUSADO", True, (255, 220, 80))
+        surface.blit(txt, txt.get_rect(center=(ox + ow // 2, oy + oh // 2)))
+
+    # ── Paneles de cerebro IA ─────────────────────────────────────────────────
+    def _draw_brain_panel(self, surface, agent, player_id: int,
+                          x: int, y: int, w: int, h: int):
+        data = getattr(agent, "last_brain_data", None)
+
+        # Fondo del panel
+        pygame.draw.rect(surface, (14, 16, 36), (x, y, w, h), border_radius=6)
+        border_col = (70, 90, 160) if player_id == 1 else (130, 70, 160)
+        pygame.draw.rect(surface, border_col, (x, y, w, h), 1, border_radius=6)
+
+        lbl_col = (160, 210, 255) if player_id == 1 else (210, 160, 255)
+        p_label = f"J{player_id}: {agent.name}"
+        title = get_font(11).render(p_label, True, lbl_col)
+        surface.blit(title, (x + 8, y + 5))
+
+        if data is None:
+            msg = get_font(11).render("Esperando primer turno...", True, (80, 80, 100))
+            surface.blit(msg, (x + 8, y + 22))
+            return
+
+        # Fórmula
+        formula = get_font(10).render(data["formula"], True, (120, 160, 120))
+        surface.blit(formula, (x + 8, y + 19))
+
+        pygame.draw.line(surface, (40, 50, 90),
+                         (x + 5, y + 32), (x + w - 5, y + 32), 1)
+
+        evals   = data["evaluations"]
+        n       = len(evals)
+        row_h   = min(30, (h - 38) // max(n, 1))
+
+        NAME_W  = 118
+        BAR_X   = x + NAME_W + 10
+        BAR_W   = 130
+        INFO_X  = BAR_X + BAR_W + 6
+
+        for i, ev in enumerate(evals):
+            ry      = y + 36 + i * row_h
+            chosen  = ev["chosen"]
+
+            if chosen:
+                pygame.draw.rect(surface, (28, 42, 72),
+                                 (x + 3, ry, w - 6, row_h - 2),
+                                 border_radius=3)
+
+            # Nombre de la acción
+            star    = "* " if chosen else "  "
+            nc      = (255, 220, 60) if chosen else (190, 190, 190)
+            ns      = get_font(11).render(star + ev["name"][:13], True, nc)
+            surface.blit(ns, (x + 6, ry + (row_h - 13) // 2))
+
+            # Barra de daño
+            opp_max = max(ev["opp_max_hp"], 1)
+            ratio   = min(1.0, ev["damage"] / opp_max)
+            pygame.draw.rect(surface, (28, 33, 55),
+                             (BAR_X, ry + (row_h - 10) // 2, BAR_W, 10),
+                             border_radius=3)
+            if ratio > 0:
+                fill_w  = max(2, int(BAR_W * ratio))
+                bar_col = (220, 70, 70) if chosen else (130, 60, 60)
+                pygame.draw.rect(surface, bar_col,
+                                 (BAR_X, ry + (row_h - 10) // 2, fill_w, 10),
+                                 border_radius=3)
+
+            # Daño + HP rival restante
+            dmg_txt = f"{ev['damage']}HP" if ev["damage"] > 0 else "0 HP"
+            opp_pct = ev["opp_hp_after"] / opp_max * 100
+            ic      = (100, 210, 100) if opp_pct > 50 else \
+                      ((220, 190, 50) if opp_pct > 25 else (210, 70, 70))
+            info_s  = get_font(10).render(f"{dmg_txt}  rival:{opp_pct:.0f}%", True, ic)
+            surface.blit(info_s, (INFO_X, ry + (row_h - 11) // 2))
+
+            # Score
+            sc_txt = f"{ev['score']:+.2f}"
+            sc_col = (100, 220, 100) if ev["score"] >= 0 else (220, 100, 100)
+            sc_s   = get_font(10).render(sc_txt, True, sc_col)
+            surface.blit(sc_s, (x + w - 36, ry + (row_h - 11) // 2))
+
+        # Desglose de componentes del movimiento elegido (solo Heurística Avanzada)
+        chosen_ev = next((e for e in evals if e["chosen"]), None)
+        if chosen_ev and "components" in chosen_ev:
+            comp_y = y + 36 + n * row_h + 4
+            pygame.draw.line(surface, (40, 50, 90),
+                             (x + 5, comp_y), (x + w - 5, comp_y), 1)
+            comp_y += 4
+            c = chosen_ev["components"]
+            parts = [
+                (f"superv:{c['superv']:+.2f}", (160, 200, 255)),
+                (f"hp:{c['hp']:+.2f}",         (180, 220, 180)),
+                (f"tipo:{c['tipo']:+.2f}",      (255, 200, 100)),
+                (f"vel:{c['vel']:+.2f}",        (200, 160, 255)),
+            ]
+            label_s = get_font(10).render("Elegido:", True, (120, 120, 140))
+            surface.blit(label_s, (x + 6, comp_y))
+            cx = x + 58
+            for txt, col in parts:
+                s = get_font(10).render(txt, True, col)
+                surface.blit(s, (cx, comp_y))
+                cx += s.get_width() + 10
 
     # ── Ganador ───────────────────────────────────────────────────────────────
     def _draw_winner(self, surface: pygame.Surface):
@@ -387,6 +532,12 @@ class BattleScreen:
         if self._picking_switch:
             self._handle_picker_event(event)
             return None
+
+        if self.mode == "ai_vs_ai":
+            if self._btn_pause.handle_event(event):
+                self._paused = not self._paused
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                self._paused = not self._paused
 
         if self.mode == "human_vs_ai":
             for btn in self.move_buttons:

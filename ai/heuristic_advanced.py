@@ -30,7 +30,8 @@ class HeuristicAdvancedAgent(Agent):
 
     def __init__(self, weights: list[float] | None = None):
         super().__init__("Heurística Avanzada")
-        self.weights = weights if weights is not None else DEFAULT_WEIGHTS[:]
+        self.weights         = weights if weights is not None else DEFAULT_WEIGHTS[:]
+        self.last_brain_data = None
 
     def get_info_lines(self) -> list[str]:
         w = self.weights
@@ -92,20 +93,84 @@ class HeuristicAdvancedAgent(Agent):
                 best = mult
         return best
 
+    # ── Evaluación por componentes (para panel cerebro) ───────────────────────
+
+    def _evaluate_components(self, state: BattleState, player_id: int) -> dict:
+        opp_id   = 3 - player_id
+        my_team  = state.get_team(player_id)
+        opp_team = state.get_team(opp_id)
+        total    = len(my_team)
+
+        alive_diff = (sum(1 for p in my_team  if p.is_alive()) -
+                      sum(1 for p in opp_team if p.is_alive())) / total
+        hp_diff    = (sum(p.hp_ratio() for p in my_team)  / total -
+                      sum(p.hp_ratio() for p in opp_team) / total)
+
+        me  = state.get_active(player_id)
+        opp = state.get_active(opp_id)
+        type_adv  = (self._best_type_advantage(me, opp) -
+                     self._best_type_advantage(opp, me)) / 4.0
+        speed_adv = (me.speed - opp.speed) / MAX_SPEED
+
+        w = self.weights
+        return {
+            "superv": w[0] * alive_diff,
+            "hp":     w[1] * hp_diff,
+            "tipo":   w[2] * type_adv,
+            "vel":    w[3] * speed_adv,
+        }
+
     # ── Decisión ─────────────────────────────────────────────────────────────
 
     def choose_action(self, state: BattleState, player_id: int) -> dict:
         best_score  = float("-inf")
         best_action = None
+        best_idx    = 0
+        evaluations = []
+
+        opp    = state.get_active(3 - player_id)
+        me     = state.get_active(player_id)
 
         for action in self._possible_actions(state, player_id):
-            sim = state.copy()
+            sim   = state.copy()
             self._apply_action(sim, player_id, action)
             score = self._evaluate(sim, player_id)
+            comps = self._evaluate_components(sim, player_id)
+
+            sim_opp = sim.get_active(3 - player_id)
+            damage  = max(0, opp.current_hp - sim_opp.current_hp)
+
+            if action["type"] == "move":
+                moves = me.get_available_moves()
+                label = moves[action["move_index"]].name
+            else:
+                team  = state.get_team(player_id)
+                label = f"-> {team[action['pokemon_index']].name}"
+
+            evaluations.append({
+                "name":         label,
+                "damage":       damage,
+                "opp_hp_after": sim_opp.current_hp,
+                "opp_max_hp":   opp.max_hp,
+                "score":        score,
+                "components":   comps,
+                "chosen":       False,
+            })
+
             if score > best_score:
                 best_score  = score
                 best_action = action
+                best_idx    = len(evaluations) - 1
 
+        if evaluations:
+            evaluations[best_idx]["chosen"] = True
+
+        w = self.weights
+        self.last_brain_data = {
+            "formula": (f"w0={w[0]:.2f}*superv  w1={w[1]:.2f}*hp"
+                        f"  w2={w[2]:.2f}*tipo  w3={w[3]:.2f}*vel"),
+            "evaluations": evaluations,
+        }
         return best_action
 
     def _apply_action(self, state: BattleState, player_id: int, action: dict):
