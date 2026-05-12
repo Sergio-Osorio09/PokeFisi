@@ -472,7 +472,11 @@ class BattleScreen:
             sc_s   = get_font(10).render(sc_txt, True, sc_col)
             surface.blit(sc_s, (x + w - 36, ry + (row_h - 11) // 2))
 
-        # Desglose de componentes del movimiento elegido (solo Heurística Avanzada)
+        # Desglose de componentes del movimiento elegido
+        _COMP_COLORS = [
+            (160, 200, 255), (180, 220, 180), (255, 200, 100),
+            (200, 160, 255), (100, 220, 200), (255, 160, 160),
+        ]
         chosen_ev = next((e for e in evals if e["chosen"]), None)
         if chosen_ev and "components" in chosen_ev:
             comp_y = y + 36 + n * row_h + 4
@@ -480,19 +484,17 @@ class BattleScreen:
                              (x + 5, comp_y), (x + w - 5, comp_y), 1)
             comp_y += 4
             c = chosen_ev["components"]
-            parts = [
-                (f"superv:{c['superv']:+.2f}", (160, 200, 255)),
-                (f"hp:{c['hp']:+.2f}",         (180, 220, 180)),
-                (f"tipo:{c['tipo']:+.2f}",      (255, 200, 100)),
-                (f"vel:{c['vel']:+.2f}",        (200, 160, 255)),
-            ]
             label_s = get_font(10).render("Elegido:", True, (120, 120, 140))
             surface.blit(label_s, (x + 6, comp_y))
             cx = x + 58
-            for txt, col in parts:
-                s = get_font(10).render(txt, True, col)
+            for i, (key, val) in enumerate(c.items()):
+                col = _COMP_COLORS[i % len(_COMP_COLORS)]
+                s   = get_font(10).render(f"{key}:{val:+.2f}", True, col)
                 surface.blit(s, (cx, comp_y))
                 cx += s.get_width() + 10
+                if cx > x + w - 40:
+                    comp_y += 13
+                    cx = x + 58
 
     # ── Ganador ───────────────────────────────────────────────────────────────
     def _draw_winner(self, surface: pygame.Surface):

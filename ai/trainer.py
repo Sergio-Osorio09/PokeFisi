@@ -21,22 +21,32 @@ def _get_moves():
 
 
 def _play_one(weights: list[float], battle_index: int) -> bool:
+    return _play_one_generic(weights, battle_index, HeuristicAdvancedAgent)
+
+
+def _play_one_generic(weights: list[float], battle_index: int, agent_class) -> bool:
     all_moves = _get_moves()
-    ids1 = random.sample(range(1, 31), 3)
-    ids2 = random.sample(range(1, 31), 3)
+    ids1  = random.sample(range(1, 31), 3)
+    ids2  = random.sample(range(1, 31), 3)
     team1 = build_team(ids1, all_moves)
     team2 = build_team(ids2, all_moves)
     state = BattleState(team1, team2)
-    our_agent = HeuristicAdvancedAgent(weights)
+    our_agent = agent_class(weights=weights)
     opp = RandomAgent() if battle_index % 2 == 0 else HeuristicBasicAgent()
-    battle = Battle(state, our_agent, opp)
-    battle.run()
+    Battle(state, our_agent, opp).run()
     return state.get_winner() == 1
 
 
-def run_training(n_battles: int) -> dict:
-    current_w = DEFAULT_WEIGHTS[:]
-    best_w = DEFAULT_WEIGHTS[:]
+def run_training(n_battles: int,
+                 agent_class=None,
+                 default_weights: list[float] | None = None) -> dict:
+    if agent_class is None:
+        agent_class = HeuristicAdvancedAgent
+    if default_weights is None:
+        default_weights = DEFAULT_WEIGHTS[:]
+
+    current_w = default_weights[:]
+    best_w    = default_weights[:]
 
     wins = 0
     window: list[int] = []
@@ -47,15 +57,13 @@ def run_training(n_battles: int) -> dict:
     print(f"\n  Entrenando {n_battles} batallas vs Random (50%) y HeuristicBasica (50%)...\n")
 
     for i in range(n_battles):
-        # Temperatura: 0.12 → ~0.005 con decaimiento exponencial
         t = 0.12 * math.exp(-3.5 * i / n_battles)
 
-        # Generar pesos candidatos perturbando los actuales
         candidate = [max(0.005, w + random.gauss(0, t)) for w in current_w]
-        total = sum(candidate)
-        candidate = [w / total for w in candidate]
+        total_w   = sum(candidate)
+        candidate = [w / total_w for w in candidate]
 
-        won = _play_one(candidate, i)
+        won = _play_one_generic(candidate, i, agent_class)
 
         if won:
             current_w = candidate
@@ -68,26 +76,26 @@ def run_training(n_battles: int) -> dict:
         wr_window = sum(window) / len(window)
         if wr_window >= best_wr and len(window) >= 10:
             best_wr = wr_window
-            best_w = current_w[:]
+            best_w  = current_w[:]
 
         if (i + 1) % report_every == 0:
-            pct = (i + 1) * 100 // n_battles
+            pct      = (i + 1) * 100 // n_battles
             total_wr = wins / (i + 1)
             print(f"  [{pct:3d}%] Batalla {i+1:>{width}}/{n_battles}"
                   f"  |  Win-rate: {total_wr:.1%}"
                   f"  |  Temp: {t:.4f}")
 
     return {
-        "weights": best_w,
-        "battles": n_battles,
+        "weights":  best_w,
+        "battles":  n_battles,
         "win_rate": wins / n_battles,
     }
 
 
-def save_weights(data: dict) -> str:
-    n = data["battles"]
+def save_weights(data: dict, prefix: str = "weights") -> str:
+    n    = data["battles"]
     path = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), '..', 'data', f'weights_{n}.json')
+        os.path.join(os.path.dirname(__file__), '..', 'data', f'{prefix}_{n}.json')
     )
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)

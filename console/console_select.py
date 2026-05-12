@@ -70,9 +70,10 @@ def select_team_size() -> int:
 def delete_trained_flow():
     """Permite eliminar archivos de pesos entrenados."""
     from ai.heuristic_trained import find_trained_weights
+    from ai.heuristic_improved import find_improved_weights
     import os
 
-    paths = list(find_trained_weights())
+    paths = list(find_trained_weights()) + list(find_improved_weights())
     if not paths:
         print("\n  No hay pesos entrenados guardados.")
         return

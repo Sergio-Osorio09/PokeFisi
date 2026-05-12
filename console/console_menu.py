@@ -13,9 +13,10 @@ def _print_banner():
 ║  1. Humano vs IA                         ║
 ║  2. IA vs IA                             ║
 ║  3. Entrenar Heuristica Avanzada         ║
-║  4. Entrenar IA Genetica                 ║
-║  5. Eliminar pesos entrenados            ║
-║  6. Salir                                ║
+║  4. Entrenar Heuristica Mejorada         ║
+║  5. Entrenar IA Genetica                 ║
+║  6. Eliminar pesos entrenados            ║
+║  7. Salir                                ║
 ╚══════════════════════════════════════════╝""")
 
 
@@ -35,12 +36,15 @@ def start_console():
             _train_flow()
 
         elif choice == "4":
-            _genetic_flow()
+            _improved_train_flow()
 
         elif choice == "5":
-            delete_trained_flow()
+            _genetic_flow()
 
         elif choice == "6":
+            delete_trained_flow()
+
+        elif choice == "7":
             print("\n¡Hasta luego!\n")
             break
 
@@ -126,6 +130,47 @@ def _train_flow():
             diff = w - d
             sign = "+" if diff >= 0 else ""
             print(f"    {lbl:<14}  {w:.4f}  (base {d:.3f},  {sign}{diff:.4f})")
+    else:
+        print(f"\n  Pesos: {weights}")
+    print()
+
+
+# ── Entrenamiento Heurística Mejorada ────────────────────────────────────────
+
+def _improved_train_flow():
+    from ai.trainer import run_training, save_weights
+    from ai.heuristic_improved import HeuristicImprovedAgent, DEFAULT_WEIGHTS as IMP_WEIGHTS
+
+    print("\n=== Entrenar Heuristica Mejorada ===")
+    while True:
+        raw = input("  ¿Cuantas batallas para entrenar? (min. 10): ").strip()
+        try:
+            n = int(raw)
+            if n >= 10:
+                break
+            print("  [!] Ingresa al menos 10 batallas.")
+        except ValueError:
+            print("  [!] Ingresa un numero entero.")
+
+    print(f"  Entrenando con {n} batallas...")
+    data = run_training(n, agent_class=HeuristicImprovedAgent, default_weights=IMP_WEIGHTS[:])
+    path = save_weights(data, prefix="weights_improved")
+
+    wr = data.get("win_rate", 0)
+    print(f"\n  Entrenamiento completado!")
+    print(f"  Guardado en:  {path}")
+    print(f"  Win-rate:     {wr:.1%}")
+
+    labels   = ["superv.", "hp_pond.", "ko_threat", "ko_danger", "cobertura", "velocidad"]
+    weights  = data.get("weights", [])
+    defaults = IMP_WEIGHTS
+
+    if len(weights) == len(labels):
+        print("\n  Pesos aprendidos:")
+        for lbl, w, d in zip(labels, weights, defaults):
+            diff = w - d
+            sign = "+" if diff >= 0 else ""
+            print(f"    {lbl:<12}  {w:.4f}  (base {d:.3f},  {sign}{diff:.4f})")
     else:
         print(f"\n  Pesos: {weights}")
     print()
