@@ -237,11 +237,13 @@ class BattleScreen:
         self._draw_info(surface, p1, self.label1, self.state.player1_team, self._seen_p1,
                         P1_INFO_X, P1_INFO_Y, bar_w=210, last_move=self._last_move_p1)
 
-        # Paneles de cerebro IA
-        self._draw_brain_panel(surface, self.agent2, 2,
-                               BRAIN_X, BRAIN_P2_Y, BRAIN_W, BRAIN_H)
-        self._draw_brain_panel(surface, self.agent1, 1,
-                               BRAIN_X, BRAIN_P1_Y, BRAIN_W, BRAIN_H)
+        # Paneles de cerebro IA (solo si hay agente)
+        if self.agent2 is not None:
+            self._draw_brain_panel(surface, self.agent2, 2,
+                                   BRAIN_X, BRAIN_P2_Y, BRAIN_W, BRAIN_H)
+        if self.agent1 is not None:
+            self._draw_brain_panel(surface, self.agent1, 1,
+                                   BRAIN_X, BRAIN_P1_Y, BRAIN_W, BRAIN_H)
 
         # Notificación de cambio
         if self._notify_timer > 0 and self._notify_pokemon:
