@@ -181,9 +181,11 @@ Los estados terminales (victoria/derrota) reciben puntuación extrema:
 
 | Profundidad | Turnos mirando | Tiempo aprox. | Calidad |
 |---|---|---|---|
-| d=2 | 2 turnos | ~50 ms/turno | Buena |
-| d=3 | 3 turnos | ~280 ms/turno | Muy buena |
-| d=4 | 4 turnos | ~1800 ms/turno | Excelente |
+| d=2 | 2 turnos | ~10 ms/decisión | Buena |
+| d=3 | 3 turnos | ~130 ms/decisión | Muy buena |
+| d=4 | 4 turnos | ~1.5 s/decisión | Excelente |
+
+> Tiempos medidos tras optimizar la copia de estado (clon ligero en lugar de `deepcopy`), que aceleró la búsqueda en torno a un orden de magnitud. Varían según la máquina.
 
 Con d=3, la IA "ve" 3 turnos completos hacia adelante: su movimiento, la respuesta del rival, y su siguiente movimiento. Eso le permite evitar trampas obvias y preparar combinaciones de dos turnos.
 

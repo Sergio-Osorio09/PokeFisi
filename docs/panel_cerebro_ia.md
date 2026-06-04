@@ -167,8 +167,11 @@ self.last_brain_data = {
 
 | Agente | Panel cerebro |
 |---|---|
+| Aleatorio | Sí — barras uniformes (1/N), deja claro que elige al azar |
 | Heurística Básica | Sí — fórmula + barras |
 | Heurística Avanzada | Sí — fórmula + barras + desglose de componentes |
-| Minimax | No (aún) |
-| Genético | Hereda Avanzada — Sí |
-| Aleatorio | No |
+| Heurística Mejorada | Sí — fórmula + barras + desglose de componentes |
+| Minimax | Sí — valor por acción + nodos, podas alfa-beta y variante principal |
+| Genético | Hereda Minimax — Sí, y añade los pesos aprendidos |
+
+Todos los agentes rellenan `self.last_brain_data` en `choose_action`, de modo que el panel funciona con cualquiera de ellos.

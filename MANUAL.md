@@ -15,7 +15,7 @@
 7. [La fórmula de daño](#7-la-fórmula-de-daño)
 8. [Ventajas y desventajas de tipo](#8-ventajas-y-desventajas-de-tipo)
 9. [Inteligencia Artificial — Los Agentes](#9-inteligencia-artificial--los-agentes)
-10. [Entrenamiento de la IA — Stochastic Hill-Climbing](#10-entrenamiento-de-la-ia--stochastic-hill-climbing)
+10. [Entrenamiento de la IA — Hill-Climbing y Algoritmo Genético](#10-entrenamiento-de-la-ia--hill-climbing-y-algoritmo-genético)
 11. [Arquitectura del código](#11-arquitectura-del-código)
 12. [Flujo completo de una batalla](#12-flujo-completo-de-una-batalla)
 13. [Estrategias recomendadas](#13-estrategias-recomendadas)
@@ -26,7 +26,7 @@
 
 PokeFisi es un simulador de combates por turnos inspirado en Pokémon. Dos jugadores (humanos o agentes de Inteligencia Artificial) se enfrentan con equipos de 3 o 4 Pokémon. El objetivo es derrotar a todos los Pokémon del equipo rival.
 
-Lo que hace especial a PokeFisi desde el punto de vista académico es que implementa **agentes inteligentes** que toman decisiones de forma autónoma usando diferentes estrategias: desde elecciones completamente aleatorias hasta una **función heurística** que evalúa el estado del juego y elige la acción más conveniente.
+Lo que hace especial a PokeFisi desde el punto de vista académico es que implementa **agentes inteligentes** que toman decisiones de forma autónoma con estrategias de complejidad creciente: desde elecciones **aleatorias**, pasando por **funciones heurísticas** que evalúan el estado del juego, hasta **búsqueda adversaria (minimax con poda alfa-beta)** y un **algoritmo genético** que optimiza la evaluación del minimax.
 
 ---
 
@@ -70,7 +70,7 @@ El Pokémon más rápido actúa primero. Si un Pokémon queda con 0 HP, el jugad
 
 ### Paso 1 — Menú Principal
 
-Al ejecutar `python3 main.py --gui` aparece el menú principal con el botón **NUEVA BATALLA**. Haz clic para comenzar.
+Al ejecutar `python3 main.py --gui` aparece el menú principal con tres botones: **NUEVA BATALLA** (jugar), **ENTRENAR IA GENETICA** (evolucionar un agente, ver sección 10) y **SALIR**. Haz clic en `NUEVA BATALLA` para comenzar.
 
 ### Paso 2 — Selección de Modo
 
@@ -82,15 +82,18 @@ Elige entre dos modos:
 Después selecciona qué tipo de IA quieres enfrentar usando los botones `<` y `>`. La pantalla muestra en tiempo real para cada agente seleccionado:
 
 - **Descripción** de su estrategia.
-- **Pesos verticales** (para Heurística Avanzada y agentes entrenados): cada factor aparece en su propia fila con una barra de color proporcional a su valor, lo que permite comparar visualmente los dos agentes en modo IA vs IA.
-- **Win-rate de entrenamiento** si el agente fue generado mediante el proceso de entrenamiento.
+- **Pesos** (heurísticas y entrenados) o una **tabla de capacidades** (Minimax y Genético: profundidad, velocidad, fitness…) para comparar visualmente las opciones.
+- **Win-rate de entrenamiento** si el agente fue generado mediante un proceso de entrenamiento.
 
 Agentes disponibles:
 
 - **Agente Aleatorio**: elige acciones completamente al azar.
-- **Heurística Básica**: evalúa el estado del juego y elige la acción más inteligente según su HP.
-- **Heurística Avanzada**: evalúa 6 factores ponderados del equipo completo.
-- **HeuristicaAvanzada-N**: agente entrenado con N batallas. Solo aparece si previamente lo entrenaste desde la consola.
+- **Heurística Básica**: elige la acción que maximiza `HP_propio − HP_rival` del Pokémon activo.
+- **Heurística Avanzada**: evalúa **4 diferenciales** ponderados (supervivencia, HP, tipo, velocidad).
+- **Heurística Mejorada**: evalúa **6 componentes** (supervivencia, HP ponderado, amenaza de KO, peligro de KO, cobertura de tipos y velocidad).
+- **Minimax `d=2` / `d=3`**: búsqueda adversaria con poda alfa-beta que anticipa la respuesta del rival hasta `d` turnos.
+- **Genético**: el Minimax con los pesos de su evaluación optimizados por un algoritmo genético.
+- **HeuristicaAvanzada-N / H.Mejorada-N / Genetico g…**: agentes entrenados; aparecen solo si previamente los generaste.
 
 Por último elige el tamaño del equipo: **3 vs 3** o **4 vs 4**.
 
@@ -130,6 +133,8 @@ La pantalla de combate se divide en dos zonas:
 - Amarilla: entre 25% y 50% de vida
 - Roja: menos del 25% de vida (¡peligro!)
 
+**Panel cerebro (columna derecha):** cuando un jugador es una IA, se muestra en tiempo real qué está evaluando en el turno actual: las acciones consideradas con su puntuación; para el Minimax, además, los **nodos explorados, las podas alfa-beta** y la variante principal (mi mejor acción → mejor réplica del rival); para el Genético, también sus pesos aprendidos.
+
 **En modo IA vs IA:** los botones están deshabilitados. La batalla ocurre automáticamente con una pausa de 1.5 segundos entre turnos para que puedas seguirla.
 
 Al terminar la batalla, presiona cualquier tecla para ver la pantalla de resultados con el ganador y las estadísticas.
@@ -143,20 +148,23 @@ Ejecuta `python3 main.py --console` (Linux) o `python main.py --console` (Window
 ### Menú principal
 
 ```
-╔══════════════════════════════════════╗
-║           POKEFISI  🎮              ║
-╠══════════════════════════════════════╣
-║  1. Humano vs IA                     ║
-║  2. IA vs IA                         ║
-║  3. Entrenar Heuristica Avanzada     ║
-║  4. Salir                            ║
-╚══════════════════════════════════════╝
+╔══════════════════════════════════════════╗
+║            POKEFISI  - Consola           ║
+╠══════════════════════════════════════════╣
+║  1. Humano vs IA                         ║
+║  2. IA vs IA                             ║
+║  3. Entrenar Heuristica Avanzada         ║
+║  4. Entrenar Heuristica Mejorada         ║
+║  5. Entrenar IA Genetica                 ║
+║  6. Eliminar pesos entrenados            ║
+║  7. Salir                                ║
+╚══════════════════════════════════════════╝
 Elige una opcion: _
 ```
 
 Escribe el número y presiona `Enter`.
 
-La opción **3** lanza el proceso de entrenamiento: pide el número de batallas, muestra el progreso en tiempo real y guarda los pesos resultantes automáticamente.
+Las opciones **3**, **4** y **5** lanzan entrenamientos: piden sus parámetros, muestran el progreso en tiempo real y guardan los pesos resultantes automáticamente (ver sección 10). La opción **6** elimina archivos de pesos entrenados.
 
 ### Selección de Pokémon
 
@@ -293,12 +301,12 @@ Damage = (Attack / Defense_op) * BasePower - Speed_op * K
 | `Defense_op` | Estadística de Defensa del Pokémon defensor |
 | `BasePower` | Poder base del movimiento usado |
 | `Speed_op` | Estadística de Velocidad del Pokémon defensor |
-| `K` | Factor de ajuste global, definido en `config.py` como `K = 0.5` |
+| `K` | Factor de ajuste global, definido en `config.py` como `K = 0.25` |
 
 ### ¿Qué hace cada parte?
 
 - **`(Attack / Defense_op) * BasePower`**: el núcleo del daño. Cuanto mayor sea el ataque del atacante y menor la defensa del defensor, más daño. El poder del movimiento amplifica este cociente.
-- **`- Speed_op * K`**: la velocidad del defensor reduce el daño, simulando que un Pokémon rápido esquiva parcialmente el golpe. Con K=0.5, un defensor con 100 de velocidad reduce 50 puntos de daño bruto.
+- **`- Speed_op * K`**: la velocidad del defensor reduce el daño, simulando que un Pokémon rápido esquiva parcialmente el golpe. Con K=0.25, un defensor con 100 de velocidad reduce 25 puntos de daño bruto.
 
 ### Reglas adicionales
 
@@ -332,14 +340,14 @@ def calculate_damage(attacker, move, defender) -> tuple[int, float]:
 Machamp (ATK=130) usa **Close Combat** (BP=120) contra Pikachu (DEF=40, SPE=90):
 
 ```
-raw   = (130 / 40) * 120 - 90 * 0.5
-      = 3.25 * 120 - 45
-      = 390 - 45
-      = 345
+raw   = (130 / 40) * 120 - 90 * 0.25
+      = 3.25 * 120 - 22.5
+      = 390 - 22.5
+      = 367.5
 
 tipo  = Fighting → Electric  → x1.0 (neutro)
 
-final = 345 * 1.0 = 345 daño
+final = int(367.5 * 1.0) = 367 daño
 ```
 
 Con 35 HP, Pikachu cae en un solo golpe.
@@ -515,10 +523,10 @@ Paso a paso:
 
 #### La simulación de acciones
 
-La simulación calcula el daño esperado sin azar (no verifica precisión en la copia):
+La simulación calcula el **daño esperado de forma determinista** (sin tirada de precisión), mediante el método `_sim_damage` de la clase base, para que el razonamiento sea reproducible:
 
 ```python
-# ai/heuristic_basic.py  (líneas 29-39)
+# ai/heuristic_basic.py
 def _apply_action(self, state: BattleState, player_id: int, action: dict):
     if action["type"] == "switch":
         state.set_active_index(player_id, action["pokemon_index"])
@@ -528,11 +536,10 @@ def _apply_action(self, state: BattleState, player_id: int, action: dict):
     defender   = state.get_active(3 - player_id)
     moves      = attacker.get_available_moves()
     if move_index < len(moves):
-        dmg, _ = calculate_damage(attacker, moves[move_index], defender)
-        defender.take_damage(dmg)
+        defender.take_damage(self._sim_damage(attacker, moves[move_index], defender))
 ```
 
-Nota importante: al simular, el agente llama a `calculate_damage` que sí incluye el factor de precisión aleatorio. Esto significa que en la simulación, un movimiento puede "fallar" y el agente podría subestimar su valor. Es una limitación de la heurística básica que una versión más avanzada podría corregir calculando el daño esperado sin aleatoriedad.
+`_sim_damage` incorpora la precisión como factor multiplicativo (valor esperado) en lugar de lanzar un dado, por lo que la simulación nunca "falla" al azar y dos evaluaciones del mismo estado dan siempre el mismo resultado. Todos los agentes que simulan (heurísticas, minimax y genético) comparten este mismo daño determinista.
 
 #### ¿Por qué esta heurística es mejor que el agente aleatorio?
 
@@ -544,58 +551,88 @@ También considera los cambios de Pokémon: si cambiar a otro Pokémon del equip
 
 ### Agente 3 — Heurística Avanzada (`ai/heuristic_advanced.py`)
 
-Este agente amplía la heurística básica considerando el **equipo completo** en lugar de solo el Pokémon activo, e incorpora cuatro factores adicionales: ventaja de tipo, diferencia de velocidad, porcentaje de Pokémon vivos propios y rivales.
+Este agente amplía la heurística básica considerando el **equipo completo** en lugar de solo el Pokémon activo. Su función de evaluación combina **cuatro diferenciales** (mi valor − el del rival), todos acotados en `[-1, 1]`, de modo que un estado perfectamente simétrico vale `0`.
 
-#### La función de evaluación de 6 factores
+#### La función de evaluación de 4 diferenciales
 
 ```python
-# ai/heuristic_advanced.py  (líneas 66-73)
+# ai/heuristic_advanced.py
 w = self.weights
 return (
-      w[0] * alive_mine       # fracción de mis Pokémon vivos
-    + w[1] * hp_avg_mine      # HP promedio propio normalizado
-    - w[2] * hp_avg_opp       # HP promedio rival normalizado
-    + w[3] * type_adv         # mejor ventaja de tipo disponible / 4.0
-    + w[4] * speed_norm       # diferencia de velocidad normalizada a [0,1]
-    - w[5] * alive_opp        # fracción de Pokémon vivos del rival
+      w[0] * alive_diff   # diferencia de Pokémon vivos (normalizada)
+    + w[1] * hp_diff      # diferencia de HP promedio de los equipos
+    + w[2] * type_adv     # mi ventaja de tipo − la del rival
+    + w[3] * speed_adv    # ventaja de velocidad del activo
 )
 ```
 
-Todos los factores están normalizados en `[0, 1]` para que los pesos sean comparables entre sí.
-
-| Factor | Cálculo | ¿Por qué importa? |
+| Diferencial | Cálculo | ¿Por qué importa? |
 |---|---|---|
-| `alive_mine` | vivos_propios / total | Más Pokémon vivos = más opciones tácticas |
-| `hp_avg_mine` | media de hp_ratio() del equipo | Mide la resistencia global del equipo |
-| `hp_avg_opp` | media de hp_ratio() rival | Cuanto más bajo, más cerca de ganar |
-| `type_adv` | mejor multiplicador disponible / 4.0 | Explotar ventajas de tipo es clave |
-| `speed_norm` | (speed_diff + MAX_SPE) / (2 · MAX_SPE) | Actuar primero da ventaja táctica |
-| `alive_opp` | vivos_rivales / total | Reducir el equipo rival acelera la victoria |
+| `alive_diff` | (vivos_propios − vivos_rivales) / total | Más Pokémon vivos = más opciones tácticas |
+| `hp_diff` | HP promedio propio − HP promedio rival | Mide quién está mejor de salud globalmente |
+| `type_adv` | (mi mejor multiplicador − el del rival) / 4 | Explotar ventajas de tipo es clave |
+| `speed_adv` | (vel_propia − vel_rival) / MAX_SPE | Actuar primero da ventaja táctica |
 
-Los **pesos por defecto** son `[0.30, 0.25, 0.25, 0.10, 0.05, 0.05]`. Se pueden ajustar manualmente en `config.py` o mediante el entrenamiento automático.
-
-#### Ventaja de tipo
-
-El factor `type_adv` se calcula buscando el mayor multiplicador de tipo entre todos los movimientos disponibles del Pokémon activo:
-
-```python
-# ai/heuristic_advanced.py  (líneas 75-82)
-def _best_type_advantage(self, me, opp) -> float:
-    best = 0.0
-    for move in me.get_available_moves():
-        mult = get_type_multiplier(move.type, opp.types)
-        if mult > best:
-            best = mult
-    return best
-```
-
-Esto incentiva al agente a elegir movimientos superefectivos o al menos a cambiar a un Pokémon con mejor cobertura de tipo.
+Los **pesos por defecto** son `[0.40, 0.35, 0.15, 0.10]`. Pueden ajustarse manualmente o, mejor, mediante entrenamiento automático (sección 10). Como cada término es un diferencial, el signo del score indica directamente quién va ganando.
 
 ---
 
-### Agente 4 — Heurística Entrenada (`ai/heuristic_trained.py`)
+### Agente 3b — Heurística Mejorada (`ai/heuristic_improved.py`)
 
-Es una subclase de `HeuristicAdvancedAgent` que en lugar de usar los pesos por defecto, **carga pesos optimizados** desde un archivo JSON generado por el proceso de entrenamiento.
+Una variante más rica que evalúa **6 componentes** en lugar de 4, incorporando nociones tácticas adicionales:
+
+| Componente | Idea |
+|---|---|
+| supervivencia | diferencia de Pokémon vivos |
+| HP ponderado | HP del equipo dando más peso al Pokémon activo |
+| amenaza de KO | ¿puedo noquear al rival este turno? |
+| peligro de KO | ¿el rival puede noquearme a mí? |
+| cobertura de equipo | variedad de tipos ofensivos del equipo |
+| velocidad | ventaja de velocidad del activo |
+
+Su lógica de decisión es la misma (simula cada acción a 1 ply y elige la de mayor score); solo cambia la función de evaluación.
+
+---
+
+### Agente 4 — Minimax con poda alfa-beta (`ai/minimax_agent.py`)
+
+A diferencia de las heurísticas, que solo miran un turno, el Minimax realiza **búsqueda adversaria**: explora un árbol de jugadas anticipando la respuesta del rival. Usa una formulación *paranoid* con árbol alternante —en los nodos **MAX** el agente maximiza su evaluación y en los nodos **MIN** el rival la minimiza— y, cuando ambas acciones quedan fijadas, simula el turno completo y desciende un nivel de profundidad. Las hojas se valoran con los mismos 4 diferenciales de la Heurística Avanzada; los estados terminales valen `±1`.
+
+```python
+# ai/minimax_agent.py  (esquema)
+def _minimax(self, state, depth, alpha, beta, player_id, opp_id, my_action):
+    if state.is_terminal(): return self._evaluate_terminal(...)
+    if depth == 0:          return self._evaluate(...)
+    if my_action is None:                      # nodo MAX (yo)
+        best = -inf
+        for a in self._possible_actions(state, player_id):
+            best = max(best, self._minimax(..., my_action=a))
+            alpha = max(alpha, best)
+            if beta <= alpha and self.prune: break   # poda β
+        return best
+    else:                                      # nodo MIN (rival)
+        best = +inf
+        for o in self._possible_actions(state, opp_id):
+            sim = state.copy(); self._apply_turn(sim, player_id, my_action, o)
+            best = min(best, self._minimax(sim, depth-1, ..., my_action=None))
+            beta = min(beta, best)
+            if beta <= alpha and self.prune: break   # poda α
+        return best
+```
+
+La **poda alfa-beta** descarta ramas que no pueden mejorar la decisión, conservando exactamente el mismo resultado que el minimax puro pero explorando muchos menos nodos (en los experimentos del informe, una reducción del 50 % a profundidad 2 y del 82 % a profundidad 3). La profundidad `d` (en turnos) es configurable: `Minimax d=2` y `Minimax d=3` ofrecen distintos equilibrios entre previsión y coste.
+
+---
+
+### Agente 5 — Genético sobre Minimax (`ai/genetic_agent.py`)
+
+Es exactamente el agente Minimax anterior, pero con los **pesos de su función de evaluación optimizados por un algoritmo genético** (sección 10) en lugar de ajustados a mano. Hereda toda la búsqueda con poda alfa-beta; solo cambian los cuatro pesos. Se carga desde un archivo `data/genetic_*.json` y aparece como `Genetico g=… p=… d=…`.
+
+---
+
+### Agente 6 — Heurística Entrenada (`ai/heuristic_trained.py`)
+
+Es una subclase de `HeuristicAdvancedAgent` que en lugar de usar los pesos por defecto, **carga pesos optimizados** desde un archivo JSON generado por el proceso de entrenamiento por *hill-climbing*.
 
 ```python
 # ai/heuristic_trained.py
@@ -634,26 +671,36 @@ Los métodos más importantes:
 |---|---|
 | `is_terminal()` | Devuelve `True` si algún equipo perdió todos sus Pokémon |
 | `get_winner()` | Devuelve 1, 2 o None según quién ganó |
-| `copy()` | Hace una copia profunda del estado completo (usado por la IA para simular) |
+| `copy()` | Hace un **clon ligero** del estado para que la IA simule sin alterar el real |
 | `next_alive_index()` | Encuentra el siguiente Pokémon vivo de un equipo |
 
-El método `copy()` usa `copy.deepcopy()` de Python, que crea duplicados independientes de todos los objetos dentro del estado. Esto es esencial para que la IA pueda simular acciones sin alterar el estado real de la batalla.
+El método `copy()` es crítico para el rendimiento del Minimax, que clona el estado miles de veces por decisión. En lugar de una costosa `copy.deepcopy()`, hace una **copia superficial de cada Pokémon**: durante una simulación lo único que se muta es el `current_hp` y los índices de activo, mientras que tipos, movimientos y estadísticas son inmutables y se pueden compartir. Este cambio aceleró la búsqueda en torno a un orden de magnitud y volvió viable el algoritmo genético sobre minimax.
 
 ```python
-# engine/state.py  (línea 59-60)
+# engine/state.py
 def copy(self):
-    return copy.deepcopy(self)
+    new = BattleState.__new__(BattleState)
+    new.player1_team = [_copy.copy(p) for p in self.player1_team]
+    new.player2_team = [_copy.copy(p) for p in self.player2_team]
+    new.active_index_p1 = self.active_index_p1
+    new.active_index_p2 = self.active_index_p2
+    new.turn_number = self.turn_number
+    return new
 ```
 
 ---
 
-## 10. Entrenamiento de la IA — Stochastic Hill-Climbing
+## 10. Entrenamiento de la IA — Hill-Climbing y Algoritmo Genético
 
-El entrenamiento busca los pesos que maximizan el win-rate de la Heurística Avanzada enfrentándola contra una mezcla de oponentes. El algoritmo usado se llama **Stochastic Hill-Climbing** (escalada estocástica de colinas).
+PokeFisi ofrece tres entrenamientos. Los dos primeros (opciones 3 y 4 de consola) ajustan los pesos de una heurística por **stochastic hill-climbing**; el tercero (opción 5 de consola o el botón de la GUI) evoluciona los pesos del **Minimax** con un **algoritmo genético**.
 
-### Idea general
+### 10.1. Hill-Climbing (Heurística Avanzada y Mejorada)
 
-Imagina los 6 pesos como una posición en un espacio de 6 dimensiones. El objetivo es encontrar el punto de ese espacio donde el agente gana más batallas. Para eso el algoritmo:
+El entrenamiento busca los pesos que maximizan el win-rate de la heurística enfrentándola contra una mezcla de oponentes. El algoritmo se llama **Stochastic Hill-Climbing** (escalada estocástica de colinas).
+
+#### Idea general
+
+Imagina los pesos (4 en la Heurística Avanzada, 6 en la Mejorada) como una posición en un espacio de varias dimensiones. El objetivo es encontrar el punto de ese espacio donde el agente gana más batallas. Para eso el algoritmo:
 
 1. Parte de una posición conocida (los pesos por defecto).
 2. Da un paso aleatorio pequeño (perturba los pesos con ruido gaussiano).
@@ -731,36 +778,41 @@ Esto protege contra rachas de suerte: un agente que gana 20 batallas seguidas y 
   Win-rate:     74.0%
 
   Pesos aprendidos (vs base):
-    alive_mine      0.3381  (base 0.300,  +0.0381)
-    hp_avg_mine     0.2715  (base 0.250,  +0.0215)
-    hp_avg_opp      0.2194  (base 0.250,  -0.0306)
-    type_adv        0.0982  (base 0.100,  -0.0018)
-    speed_norm      0.0431  (base 0.050,  -0.0069)
-    alive_opp       0.0297  (base 0.050,  -0.0203)
+    supervivencia   0.3821  (base 0.400,  -0.0179)
+    hp_diff         0.4103  (base 0.350,  +0.0603)
+    tipo            0.1342  (base 0.150,  -0.0158)
+    velocidad       0.0734  (base 0.100,  -0.0266)
 ```
 
-### Formato del archivo de pesos
+#### Formato del archivo de pesos
 
-El archivo `data/weights_N.json` tiene la siguiente estructura:
+El archivo `data/weights_N.json` tiene la siguiente estructura (4 pesos para la Avanzada):
 
 ```json
 {
-  "weights": [0.338, 0.271, 0.219, 0.098, 0.043, 0.031],
+  "weights": [0.382, 0.410, 0.134, 0.073],
   "battles": 200,
   "win_rate": 0.74
 }
 ```
 
-El orden de los pesos corresponde siempre a: `[alive_mine, hp_avg_mine, hp_avg_opp, type_adv, speed_norm, alive_opp]`.
+El orden de los pesos corresponde siempre a: `[supervivencia, hp_diff, tipo, velocidad]`. La Heurística Mejorada se guarda igual pero con 6 pesos en `data/weights_improved_N.json`.
+
+### 10.2. Algoritmo Genético sobre Minimax
+
+La opción **5** de consola y el botón **ENTRENAR IA GENETICA** de la GUI evolucionan los 4 pesos que usa el **Minimax** en sus hojas. Cada *individuo* es un vector de 4 pesos; su *fitness* es la tasa de victorias de un `Minimax(d, pesos)` en `K` batallas contra la Heurística Básica. El ciclo combina **selección por torneo**, **cruce uniforme**, **mutación gaussiana** y **elitismo** durante `G` generaciones, y guarda el mejor resultado en `data/genetic_gG_pP_dD.json`. La explicación completa, paso a paso, está en [`docs/algoritmo_genetico.md`](algoritmo_genetico.md).
+
+Desde la **GUI**, el entrenamiento corre en segundo plano con barra de progreso por batalla y una gráfica de fitness por generación, y puede cancelarse; al terminar, el nuevo agente queda seleccionable sin reiniciar.
 
 ### Registro automático de agentes (`ai/registry.py`)
 
-Al iniciar el juego (GUI o consola), el registro escanea `data/weights_*.json` y añade automáticamente cada agente entrenado a la lista de selección:
+Al iniciar el juego (GUI o consola), el registro escanea `data/weights_*.json` y `data/genetic_*.json` y añade automáticamente cada agente entrenado a la lista de selección:
 
 ```python
 # ai/registry.py
 def build_registry():
-    return _BASE + _trained_entries()   # base + todos los weights_*.json encontrados
+    # base + heurísticas entrenadas + mejoradas + genéticos encontrados en data/
+    return _BASE + _trained_entries() + _improved_trained_entries() + _genetic_entries()
 ```
 
 Esto significa que cualquier archivo de pesos que coloques en `data/` estará disponible como agente sin necesidad de modificar el código.
@@ -783,11 +835,15 @@ main.py
     │
     ├── ai/                          ← agentes de IA
     │       ├── base_agent.py        ← contrato abstracto (+ get_info_lines)
-    │       ├── random_agent.py      ← nivel 1
-    │       ├── heuristic_basic.py   ← nivel 2
-    │       ├── heuristic_advanced.py← nivel 3 (6 factores ponderados)
-    │       ├── heuristic_trained.py ← carga pesos desde weights_N.json
-    │       ├── trainer.py           ← bucle de entrenamiento hill-climbing
+    │       ├── random_agent.py      ← Agente Aleatorio
+    │       ├── heuristic_basic.py   ← Heurística Básica
+    │       ├── heuristic_advanced.py← Heurística Avanzada (4 diferenciales)
+    │       ├── heuristic_improved.py← Heurística Mejorada (6 componentes)
+    │       ├── heuristic_trained.py ← carga pesos desde weights_*.json
+    │       ├── minimax_agent.py     ← Minimax con poda alfa-beta
+    │       ├── genetic_agent.py     ← Minimax con pesos evolucionados
+    │       ├── genetic_trainer.py   ← algoritmo genético sobre minimax
+    │       ├── trainer.py           ← entrenamiento hill-climbing de heurísticas
     │       └── registry.py          ← registro dinámico de todos los agentes
     │
     └── engine/                      ← motor de combate (sin GUI ni IA)
@@ -807,9 +863,9 @@ Centraliza todas las constantes del proyecto para poder ajustarlas en un solo lu
 
 ```python
 # config.py
-K          = 0.5    # factor de velocidad en la fórmula de daño
-FPS        = 60     # cuadros por segundo de la GUI
-AI_TURN_DELAY = 1500  # pausa entre turnos en IA vs IA (milisegundos)
+K             = 0.25   # factor de velocidad en la fórmula de daño
+FPS           = 60     # cuadros por segundo de la GUI
+AI_TURN_DELAY = 1500   # pausa entre turnos en IA vs IA (milisegundos)
 ```
 
 Si quieres experimentar con la fórmula de daño, cambiar `K` aquí afecta a toda la simulación sin tocar ningún otro archivo.
@@ -855,13 +911,13 @@ def is_terminal(self) -> bool:
     )
 ```
 
-La batalla termina cuando **todos** los Pokémon de un equipo tienen 0 HP.
+La batalla termina cuando **todos** los Pokémon de un equipo tienen 0 HP. Además, para evitar batallas infinitas (por ejemplo Normal vs Ghost, que no se pueden hacer daño mutuo, o agentes que solo cambian), existe un tope de `MAX_TURNS = 200` turnos en `engine/battle.py`; si se alcanza, el ganador se decide por número de Pokémon vivos y, en caso de empate, por HP total.
 
 ### Diagrama simplificado
 
 ```
 Battle.run()
-    └─ while not is_terminal():
+    └─ while not is_terminal() and turno < MAX_TURNS:
            └─ step()
                   ├─ agent1.choose_action()   ← IA evalúa o humano hace clic
                   ├─ agent2.choose_action()   ← IA evalúa o humano hace clic
@@ -898,13 +954,21 @@ Esta IA considera el equipo completo y la ventaja de tipo. Es más difícil de s
 - **Prioriza Pokémon rápidos**: la IA pondera la velocidad; un equipo con alta SPE le da menos ventaja.
 - **Cambia de Pokémon estratégicamente**: la IA no simula la respuesta de tu cambio, solo el estado inmediato.
 
+### Para ganar al Minimax y al Genético
+
+Estos agentes anticipan tu respuesta varios turnos, así que las trampas de "un solo turno" no funcionan tan bien. Aun así:
+
+- **El Minimax es pesimista** (asume que jugarás siempre lo peor para él): a veces hace cambios demasiado defensivos. Un equipo agresivo y rápido puede castigar esa cautela.
+- **Razona sobre el daño determinista** (sin azar): los movimientos de baja precisión pero alto poder pueden sorprenderlo cuando aciertan.
+- Contra el **Genético**, observa en el panel cerebro sus pesos aprendidos: si valora mucho la velocidad, prioriza tú Pokémon rápidos; si prioriza el HP, un planteamiento de desgaste le cuesta más.
+
 ### Para ganar a un agente entrenado
 
-Depende de cómo resultaron sus pesos. Observa los pesos en la pantalla de selección:
+Depende de cómo resultaron sus pesos. Observa los pesos en la pantalla de selección o en el panel cerebro:
 
-- Si `type_adv` es alto, el agente prioriza mucho la ventaja de tipo: construye un equipo con cobertura de tipos variada.
-- Si `vel` es alto, el agente valora mucho actuar primero: usa Pokémon de alta velocidad.
-- Si `hp_avg_opp` (negativo en la fórmula) tiene peso bajo, el agente no presiona agresivamente el daño: un equipo defensivo puede aguantar y desgastarlo.
+- Si **tipo** es alto, el agente prioriza la ventaja de tipo: construye un equipo con cobertura de tipos variada.
+- Si **velocidad** es alta, valora mucho actuar primero: usa Pokémon de alta velocidad.
+- Si **hp_diff** domina, juega al desgaste con Pokémon defensivos y de mucho HP.
 
 ### Equipos equilibrados sugeridos para comenzar
 

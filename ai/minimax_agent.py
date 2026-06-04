@@ -38,7 +38,8 @@ class MinimaxAgent(Agent):
         # Poda alfa-beta activable; desactivarla permite medir su beneficio.
         self.prune = True
 
-    _MS_PER_DEPTH = {2: 50, 3: 280, 4: 1800}
+    # Tiempo aprox. por decisión (ms) tras optimizar la copia de estado.
+    _MS_PER_DEPTH = {2: 10, 3: 130, 4: 1500}
 
     def get_info_lines(self) -> list[str]:
         d   = self.depth
