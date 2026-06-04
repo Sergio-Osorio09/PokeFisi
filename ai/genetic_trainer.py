@@ -34,19 +34,29 @@ def _random_individual() -> list[float]:
 
 
 def _evaluate(weights: list[float], all_moves: dict,
-              all_ids: list[int], battles: int, depth: int) -> float:
+              all_ids: list[int], battles: int, depth: int,
+              should_stop=None, battle_cb=None) -> float:
     """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) que usa estos
-    pesos en su función de evaluación, jugando 'battles' batallas vs HeuristicaBasica."""
+    pesos en su función de evaluación, jugando 'battles' batallas vs HeuristicaBasica.
+
+    should_stop : si devuelve True, corta entre batallas (cancelación granular).
+    battle_cb   : se llama tras cada batalla jugada (para reportar progreso fino)."""
     agent    = MinimaxAgent(depth=depth, weights=weights)
     opponent = HeuristicBasicAgent()
     wins     = 0
+    played   = 0
     for _ in range(battles):
+        if should_stop is not None and should_stop():
+            break
         ids1  = random.sample(all_ids, 3)
         ids2  = random.sample(all_ids, 3)
         state = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
         if Battle(state, agent, opponent).run() == 1:
             wins += 1
-    return wins / battles
+        played += 1
+        if battle_cb is not None:
+            battle_cb()
+    return wins / played if played else 0.0
 
 
 def _tournament(population: list, fitnesses: list[float], k: int = 3) -> list[float]:
@@ -82,7 +92,8 @@ def run_genetic(pop_size: int = 12,
                 mutation_strength: float = 0.10,
                 elite_k: int = 2,
                 callback=None,
-                should_stop=None) -> dict:
+                should_stop=None,
+                progress_cb=None) -> dict:
     """
     Ejecuta el algoritmo genético completo sobre Minimax.
 
@@ -103,8 +114,11 @@ def run_genetic(pop_size: int = 12,
     callback          : función opcional llamada al final de cada generación con
                         (gen, total, best_gen_fit, best_global_fit, avg_fit, population)
     should_stop       : callable opcional sin args; si devuelve True se detiene la
-                        evolución tras la generación en curso y se retorna el mejor
-                        resultado obtenido hasta ese momento (cancelación cooperativa)
+                        evolución (se comprueba entre batallas → cancelación rápida)
+                        y se retorna el mejor resultado obtenido hasta ese momento
+    progress_cb       : callable opcional para progreso fino, llamado tras cada
+                        batalla con (battles_done, total_battles, gen, generations,
+                        best_global_fit)
 
     Returns
     -------
@@ -120,26 +134,46 @@ def run_genetic(pop_size: int = 12,
     best_fitness  = -1.0
     history: list[dict] = []
 
+    total_battles = pop_size * generations * battles_per_eval
+    battles_done  = 0
+    actual_gens   = 0
+
     for gen in range(1, generations + 1):
 
-        # ── 1. Evaluación ─────────────────────────────────────────────────────
-        fitnesses = [_evaluate(w, all_moves, all_ids, battles_per_eval, minimax_depth)
-                     for w in population]
+        # ── 1. Evaluación (con progreso y cancelación por batalla) ────────────
+        fitnesses: list[float] = []
+        for w in population:
+            if should_stop is not None and should_stop():
+                break
 
-        gen_best_idx = max(range(pop_size), key=lambda i: fitnesses[i])
-        gen_best_fit = fitnesses[gen_best_idx]
-        avg_fit      = sum(fitnesses) / pop_size
+            def _battle_cb():
+                nonlocal battles_done
+                battles_done += 1
+                if progress_cb is not None:
+                    progress_cb(battles_done, total_battles, gen,
+                                generations, max(best_fitness, 0.0))
 
-        # Actualizar mejor global
-        if gen_best_fit > best_fitness:
-            best_fitness = gen_best_fit
-            best_weights = population[gen_best_idx][:]
+            f = _evaluate(w, all_moves, all_ids, battles_per_eval, minimax_depth,
+                          should_stop=should_stop, battle_cb=_battle_cb)
+            fitnesses.append(f)
+
+            # Mejor global incremental (no se pierde aunque se cancele a media gen)
+            if f > best_fitness:
+                best_fitness = f
+                best_weights = w[:]
+
+        if not fitnesses:
+            break   # cancelado antes de evaluar nada en esta generación
+
+        actual_gens  = gen
+        gen_best_fit = max(fitnesses)
+        avg_fit      = sum(fitnesses) / len(fitnesses)
 
         history.append({
-            "gen":         gen,
-            "best_gen":    round(gen_best_fit, 4),
-            "best_global": round(best_fitness, 4),
-            "avg":         round(avg_fit, 4),
+            "gen":          gen,
+            "best_gen":     round(gen_best_fit, 4),
+            "best_global":  round(best_fitness, 4),
+            "avg":          round(avg_fit, 4),
             "best_weights": best_weights[:],
         })
 
@@ -147,9 +181,8 @@ def run_genetic(pop_size: int = 12,
             callback(gen, generations, gen_best_fit, best_fitness,
                      avg_fit, population[:])
 
-        # Cancelación cooperativa: detener tras una generación completa.
-        if should_stop is not None and should_stop() and best_weights is not None:
-            generations = gen   # reflejar las generaciones realmente ejecutadas
+        # Cancelado a media generación o señal de parada: terminar aquí.
+        if len(fitnesses) < pop_size or (should_stop is not None and should_stop()):
             break
 
         # ── 2. Elitismo ───────────────────────────────────────────────────────
@@ -166,10 +199,14 @@ def run_genetic(pop_size: int = 12,
 
         population = new_pop
 
+    if best_weights is None:          # salvaguarda: nunca se evaluó nada
+        best_weights = population[0][:]
+        best_fitness = max(best_fitness, 0.0)
+
     return {
         "weights":           best_weights,
         "fitness":           best_fitness,
-        "generations":       generations,
+        "generations":       actual_gens or generations,
         "pop_size":          pop_size,
         "battles_per_eval":  battles_per_eval,
         "minimax_depth":     minimax_depth,

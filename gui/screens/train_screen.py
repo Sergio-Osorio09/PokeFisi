@@ -25,6 +25,10 @@ _GEN_OPTS    = [10, 15, 20, 30]
 _BATTLE_OPTS = [4, 6, 8, 10]
 _DEPTH_OPTS  = [2, 3]
 
+# Estimacion grosera de tiempo por batalla de minimax (ms), por profundidad.
+# Solo orienta al usuario; varia con la maquina.
+_MS_PER_BATTLE = {2: 700, 3: 8500}
+
 
 class TrainScreen:
     def __init__(self):
@@ -67,15 +71,20 @@ class TrainScreen:
                                 font_size=20, color=(40,90,160), hover_color=(60,130,200))
 
         # ── Estado del entrenamiento (compartido con el hilo) ────────────────
-        self._lock     = threading.Lock()
-        self.phase     = "CONFIG"   # CONFIG | RUNNING | DONE | ERROR
-        self._history  = []         # [(gen, best_gen, best_global, avg)]
-        self._total    = 0
-        self._cancel   = False
-        self._result   = None
+        self._lock      = threading.Lock()
+        self.phase      = "CONFIG"   # CONFIG | RUNNING | DONE | ERROR
+        self._history   = []         # [(gen, best_gen, best_global, avg)]
+        self._total     = 0          # generaciones objetivo
+        self._cur_gen   = 0
+        self._best      = 0.0        # mejor fitness global (progreso fino)
+        self._frac      = 0.0        # fraccion de batallas completadas [0,1]
+        self._done_b    = 0
+        self._total_b   = 0
+        self._cancel    = False
+        self._result    = None
         self._save_path = None
-        self._error    = None
-        self._thread   = None
+        self._error     = None
+        self._thread    = None
 
     # ── helpers de config ──────────────────────────────────────────────────
 
@@ -88,6 +97,18 @@ class TrainScreen:
         bat = _BATTLE_OPTS[self._bat_i]
         return pop * gen * bat
 
+    def _estimate_seconds(self) -> float:
+        depth = _DEPTH_OPTS[self._dep_i]
+        return self._estimate() * _MS_PER_BATTLE.get(depth, 1000) / 1000.0
+
+    @staticmethod
+    def _fmt_time(secs: float) -> str:
+        if secs < 90:
+            return f"~{secs:.0f} s"
+        if secs < 3600:
+            return f"~{secs/60:.0f} min"
+        return f"~{secs/3600:.1f} h"
+
     # ── arranque del hilo ────────────────────────────────────────────────────
 
     def _start_training(self):
@@ -96,6 +117,12 @@ class TrainScreen:
         bat   = _BATTLE_OPTS[self._bat_i]
         depth = _DEPTH_OPTS[self._dep_i]
 
+        with self._lock:
+            self._total   = gen
+            self._total_b = pop * gen * bat
+            self._cur_gen = 0
+            self._frac    = 0.0
+            self._best    = 0.0
         self.phase = "RUNNING"
         self._thread = threading.Thread(
             target=self._worker, args=(pop, gen, bat, depth), daemon=True)
@@ -109,6 +136,7 @@ class TrainScreen:
                 battles_per_eval=bat,
                 minimax_depth=depth,
                 callback=self._on_generation,
+                progress_cb=self._on_progress,
                 should_stop=lambda: self._cancel,
             )
             path = save_genetic_weights(data)
@@ -126,6 +154,15 @@ class TrainScreen:
         with self._lock:
             self._history.append((gen, best_gen, best_global, avg))
             self._total = total
+
+    def _on_progress(self, done_b, total_b, gen, total_g, best_global):
+        with self._lock:
+            self._done_b  = done_b
+            self._total_b = total_b
+            self._frac    = (done_b / total_b) if total_b else 0.0
+            self._cur_gen = gen
+            self._total   = total_g
+            self._best    = best_global
 
     # ── update / draw ──────────────────────────────────────────────────────
 
@@ -170,8 +207,14 @@ class TrainScreen:
 
         est = self._estimate()
         est_surf = self.font_info.render(
-            f"Total aproximado: {est} batallas de minimax", True, (230, 200, 120))
+            f"Total: {est} batallas de minimax   (tiempo estimado {self._fmt_time(self._estimate_seconds())})",
+            True, (230, 200, 120))
         surface.blit(est_surf, est_surf.get_rect(centerx=cx, top=460))
+        if _DEPTH_OPTS[self._dep_i] == 3:
+            warn = self.font_info.render(
+                "Profundidad 3 es MUY lenta (~8 s/batalla). Usa valores bajos para probar.",
+                True, (240, 150, 120))
+            surface.blit(warn, warn.get_rect(centerx=cx, top=484))
 
         self.btn_back.draw(surface)
         self.btn_start.draw(surface)
@@ -179,47 +222,52 @@ class TrainScreen:
     def _draw_running(self, surface):
         cx = WINDOW_WIDTH // 2
         with self._lock:
-            hist  = list(self._history)
-            total = self._total
-            cancelling = self._cancel
+            hist        = list(self._history)
+            total_g     = self._total or 1
+            cur_gen     = max(self._cur_gen, 1)
+            best_global = self._best
+            frac        = self._frac
+            done_b      = self._done_b
+            total_b     = self._total_b
+            cancelling  = self._cancel
+
+        avg = hist[-1][3] if hist else 0.0
 
         title = self.font_title.render("Evolucionando...", True, (255, 220, 0))
         surface.blit(title, title.get_rect(centerx=cx, top=55))
 
-        cur_gen     = hist[-1][0] if hist else 0
-        best_global = hist[-1][2] if hist else 0.0
-        avg         = hist[-1][3] if hist else 0.0
-        total       = total or sum(_GEN_OPTS)  # fallback
+        # Texto de progreso (generacion + batallas)
+        gtxt = self.font_lbl.render(f"Generacion {cur_gen} / {total_g}", True, WHITE)
+        surface.blit(gtxt, gtxt.get_rect(centerx=cx, top=118))
+        btxt = self.font_info.render(f"batalla {done_b} / {total_b}", True, (180, 190, 210))
+        surface.blit(btxt, btxt.get_rect(centerx=cx, top=146))
 
-        # Texto de progreso
-        gtxt = self.font_lbl.render(
-            f"Generacion {cur_gen} / {total}", True, WHITE)
-        surface.blit(gtxt, gtxt.get_rect(centerx=cx, top=120))
-
-        # Barra de progreso
+        # Barra de progreso (fraccion de batallas completadas)
         bar_w, bar_h = 600, 26
-        bx, by = cx - bar_w // 2, 160
+        bx, by = cx - bar_w // 2, 168
         pygame.draw.rect(surface, (45, 50, 70), (bx, by, bar_w, bar_h), border_radius=6)
-        frac = (cur_gen / total) if total else 0
         pygame.draw.rect(surface, (90, 170, 240),
                          (bx, by, int(bar_w * frac), bar_h), border_radius=6)
         pygame.draw.rect(surface, WHITE, (bx, by, bar_w, bar_h), 2, border_radius=6)
+        pct = self.font_info.render(f"{frac:.0%}", True, WHITE)
+        surface.blit(pct, pct.get_rect(center=(cx, by + bar_h // 2)))
 
         # Fitness grande
         big = self.font_big.render(f"{best_global:.0%}", True, (120, 230, 150))
-        surface.blit(big, big.get_rect(centerx=cx, top=205))
+        surface.blit(big, big.get_rect(centerx=cx, top=210))
         flbl = self.font_info.render("mejor fitness global", True, (180, 200, 180))
-        surface.blit(flbl, flbl.get_rect(centerx=cx, top=262))
-        albl = self.font_info.render(f"promedio gen actual: {avg:.0%}", True, (180, 180, 200))
-        surface.blit(albl, albl.get_rect(centerx=cx, top=286))
+        surface.blit(flbl, flbl.get_rect(centerx=cx, top=266))
+        albl = self.font_info.render(f"promedio ultima gen: {avg:.0%}", True, (180, 180, 200))
+        surface.blit(albl, albl.get_rect(centerx=cx, top=290))
 
         # Grafica de evolucion (best_global verde, promedio gris)
-        self._draw_chart(surface, hist, total, top=320, height=230)
+        self._draw_chart(surface, hist, total_g, top=322, height=210)
 
         if cancelling:
-            c = self.font_info.render("Cancelando tras la generacion actual...",
+            c = self.font_info.render("Cancelando... (se detiene tras la batalla actual)",
                                       True, (240, 180, 120))
-            surface.blit(c, c.get_rect(centerx=cx, top=620))
+            surface.blit(c, c.get_rect(centerx=cx, top=596))
+            self.btn_done.draw(surface)   # permite volver al menu de inmediato
         else:
             self.btn_cancel.draw(surface)
 
@@ -340,7 +388,12 @@ class TrainScreen:
             return None
 
         if self.phase == "RUNNING":
-            if not self._cancel and self.btn_cancel.handle_event(event):
+            if self._cancel:
+                # Ya cancelando: permitir volver al menu sin esperar
+                # (el hilo daemon termina la batalla en curso y se cierra solo).
+                if self.btn_done.handle_event(event):
+                    return "MENU"
+            elif self.btn_cancel.handle_event(event):
                 self._cancel = True
             return None
 
