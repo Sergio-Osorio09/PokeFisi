@@ -1,0 +1,444 @@
+% Plantilla ACL (Association for Computational Linguistics).
+% Requiere los archivos de estilo acl.sty y acl_natbib.bst del template oficial:
+% https://www.overleaf.com/latex/templates/association-for-computational-linguistics-acl-conference/jvxskxpnznfj
+\documentclass[11pt]{article}
+
+\usepackage{acl}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{url}
+
+\title{PokeFisi: agentes de decisión para combates Pokémon \\
+       mediante heurísticas, minimax con poda alfa-beta y algoritmos genéticos}
+
+\author{Sergio Osorio \\
+  Universidad Nacional Mayor de San Marcos \\
+  Facultad de Ciencias Físicas \\
+  \texttt{alejandroosorio0909@gmail.com}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Presentamos \textbf{PokeFisi}, un simulador de combates Pokémon 3 contra 3 por
+turnos diseñado para estudiar y comparar agentes de toma de decisiones en un
+entorno adversario con información completa. Implementamos cinco estrategias de
+dificultad creciente: un agente \emph{aleatorio}, una \emph{heurística básica},
+una \emph{heurística avanzada}, un agente \emph{minimax con poda alfa-beta} y un
+\emph{algoritmo genético} que optimiza la función de evaluación del minimax. El
+trabajo describe el modelado del dominio (estados, daño, tipos y dinámica de
+turnos) y la formulación de cada algoritmo. Mediante experimentos sistemáticos
+medimos el desempeño relativo entre agentes, el efecto de la profundidad de
+búsqueda y el beneficio de la poda alfa-beta, y el impacto del elitismo en la
+convergencia del algoritmo genético. Los resultados confirman una jerarquía
+clara de competencia entre las estrategias y muestran que la poda alfa-beta
+reduce drásticamente el número de nodos explorados sin alterar la decisión.
+\end{abstract}
+
+\section{Introducción}
+
+Los juegos por turnos son un banco de pruebas clásico para la inteligencia
+artificial porque combinan un espacio de estados grande, decisiones
+secuenciales y un oponente que también actúa de forma racional
+\citep{shannon1950,russell2020}. Los combates de la saga \emph{Pokémon}
+constituyen un caso particularmente rico: cada entrenador dispone de un equipo
+de criaturas con estadísticas, tipos elementales y movimientos diversos, y en
+cada turno debe decidir entre atacar o cambiar de Pokémon. La interacción de la
+tabla de efectividad de tipos, el orden por velocidad y la gestión del equipo
+genera un árbol de decisión amplio y con fuerte componente táctico.
+
+Este trabajo presenta \textbf{PokeFisi}, un simulador 3 contra 3 desarrollado en
+Python, con motor de combate determinista para simulación e interfaz gráfica
+para visualizar el razonamiento de cada agente. El objetivo es doble:
+(i)~modelar el combate como un problema de búsqueda y decisión, y (ii)~comparar
+empíricamente una familia de agentes que van desde la elección aleatoria hasta
+estrategias informadas por búsqueda adversaria y por aprendizaje evolutivo.
+
+Las contribuciones son las siguientes. Primero, formalizamos el dominio y una
+función de evaluación basada en diferenciales acotados. Segundo, implementamos
+un agente \emph{minimax} con poda alfa-beta \citep{knuth1975} bajo una
+formulación \emph{paranoid} adecuada a la naturaleza simultánea del combate.
+Tercero, desarrollamos un \emph{algoritmo genético} \citep{holland1992,goldberg1989}
+que evoluciona los pesos de la evaluación empleada por el minimax, de modo que
+la búsqueda y el aprendizaje se combinan. Finalmente, evaluamos los agentes en
+torneos todos contra todos, analizamos cómo la profundidad de búsqueda y la poda
+afectan el coste y la calidad, y estudiamos el papel del elitismo en la
+estabilidad del algoritmo genético.
+
+\section{Metodología}
+
+\subsection{Modelado del dominio}
+
+\paragraph{Estado.} Un combate enfrenta dos equipos de tres Pokémon. El estado
+$s$ contiene ambos equipos, el índice del Pokémon activo de cada jugador y el
+número de turno. Un estado es \emph{terminal} cuando todos los Pokémon de algún
+equipo están debilitados; el ganador es el jugador con Pokémon vivos restantes.
+
+\paragraph{Pokémon y estadísticas.} Cada Pokémon tiene tipos, hasta cuatro
+movimientos y estadísticas derivadas a nivel 100 a partir de sus valores base
+$b$:
+\[
+\text{HP}_{\max}=2b_{\text{hp}}+110,\quad
+\{\text{atk},\text{def},\text{spe}\}=2b+5 .
+\]
+
+\paragraph{Daño y tipos.} El daño emplea una tabla de efectividad de tipos
+$\mathrm{mult}(t_{\text{mov}},t_{\text{def}})\in\{0,0.5,1,2\}$. Para las
+simulaciones internas de los agentes usamos un daño determinista (sin tirada de
+azar) que permite razonar de forma reproducible:
+\begin{equation}
+\label{eq:dano}
+d = \Big\lfloor \max(1,\ \tfrac{\text{atk}}{\text{def}}\,p - \text{spe}\cdot K)
+\cdot \mathrm{mult}\cdot \tfrac{\text{acc}}{100} \Big\rfloor,
+\end{equation}
+donde $p$ es la potencia del movimiento, $\text{acc}$ su precisión y $K=0.25$
+una constante que penaliza atacar a un rival más veloz.
+
+\paragraph{Dinámica de turno.} En cada turno ambos jugadores eligen una acción
+---usar un movimiento o cambiar de Pokémon--- y se ejecutan por orden de
+velocidad (los empates se resuelven al azar). Los Pokémon debilitados se
+reemplazan automáticamente. Para garantizar la terminación en emparejamientos
+donde ningún bando puede causar daño (por inmunidades de tipo), imponemos un
+tope de 200 turnos; de alcanzarse, se decide por número de Pokémon vivos y, en
+caso de empate, por HP total.
+
+\paragraph{Acciones.} Dado un estado, el conjunto de acciones de un jugador es el
+de sus movimientos disponibles más los cambios a cualquier Pokémon vivo del
+banco.
+
+\subsection{Agentes}
+
+\paragraph{1. Aleatorio.} Sirve como línea base: elige uniformemente entre las
+acciones posibles, sin evaluación alguna. Su desempeño cuantifica la dificultad
+intrínseca del entorno.
+
+\paragraph{2. Heurística básica.} Evalúa cada acción a un solo nivel (\emph{1
+ply}): simula la acción y puntúa el estado resultante con la diferencia de salud
+del Pokémon activo,
+\(
+f_{\text{bas}}(s)=\text{hp}_{\text{propio}}(s)-\text{hp}_{\text{rival}}(s),
+\)
+eligiendo la de mayor puntuación. Es codiciosa y miope, pero ya supera con
+holgura al azar.
+
+\paragraph{3. Heurística avanzada.} Generaliza la anterior con una función de
+evaluación que pondera cuatro \emph{diferenciales} acotados en $[-1,1]$, de modo
+que un estado simétrico vale $0$:
+\begin{align}
+\label{eq:eval}
+f(s) =\ & w_0\,\Delta_{\text{vivos}} + w_1\,\Delta_{\text{hp}} \nonumber\\
+        & + w_2\,\Delta_{\text{tipo}} + w_3\,\Delta_{\text{vel}},
+\end{align}
+donde $\Delta_{\text{vivos}}$ es la diferencia normalizada de Pokémon vivos,
+$\Delta_{\text{hp}}$ la diferencia de HP promedio, $\Delta_{\text{tipo}}$ la
+ventaja de tipo del mejor movimiento disponible y $\Delta_{\text{vel}}$ la
+ventaja de velocidad del activo. Los pesos por defecto, ajustados manualmente,
+son $\mathbf{w}=(0.40,0.35,0.15,0.10)$. Esta misma evaluación se reutiliza en
+los dos agentes siguientes.
+
+\paragraph{4. Minimax con poda alfa-beta.} Para mirar más allá de un turno
+empleamos búsqueda adversaria. Modelamos el combate ---intrínsecamente
+simultáneo--- mediante una formulación \emph{paranoid} con árbol alternante: en
+los nodos MAX el agente elige su acción para maximizar la
+ecuación~\eqref{eq:eval} y en los nodos MIN el rival elige la suya para
+minimizarla; cuando ambas acciones quedan fijadas se simula el turno completo
+(con prioridad por velocidad y auto-reemplazo) y se desciende un nivel de
+profundidad. Las hojas se valoran con la ecuación~\eqref{eq:eval} y los estados
+terminales con $\pm 1$. La poda alfa-beta \citep{knuth1975} descarta ramas que
+no pueden mejorar la decisión, conservando el mismo resultado que el minimax
+puro pero reduciendo el coste de $O(b^d)$ hacia $O(b^{d/2})$ con un buen orden de
+exploración (Algoritmo~\ref{alg:minimax}). La profundidad $d$ (en turnos) es
+configurable y regula el compromiso entre calidad y tiempo.
+
+\begin{algorithm}[t]
+\caption{Minimax con poda alfa-beta (paranoid)}
+\label{alg:minimax}
+\small
+\begin{algorithmic}[1]
+\Function{Minimax}{$s,d,\alpha,\beta,a_{\text{yo}}$}
+  \If{$s$ terminal} \Return $\pm 1$ \EndIf
+  \If{$d=0$} \Return $f(s)$ \Comment{ec.~\eqref{eq:eval}} \EndIf
+  \If{$a_{\text{yo}}=\varnothing$} \Comment{nodo MAX}
+    \For{cada acción $a$ del agente}
+      \State $v\gets$ \Call{Minimax}{$s,d,\alpha,\beta,a$}
+      \State $\alpha\gets\max(\alpha,v)$
+      \If{$\beta\le\alpha$} \textbf{break} \Comment{poda} \EndIf
+    \EndFor
+    \State \Return mejor $v$
+  \Else \Comment{nodo MIN}
+    \For{cada acción $o$ del rival}
+      \State $s'\gets$ \Call{SimularTurno}{$s,a_{\text{yo}},o$}
+      \State $v\gets$ \Call{Minimax}{$s',d-1,\alpha,\beta,\varnothing$}
+      \State $\beta\gets\min(\beta,v)$
+      \If{$\beta\le\alpha$} \textbf{break} \Comment{poda} \EndIf
+    \EndFor
+    \State \Return menor $v$
+  \EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{5. Algoritmo genético sobre minimax.} Los pesos $\mathbf{w}$ de la
+ecuación~\eqref{eq:eval} determinan el comportamiento del minimax, pero
+ajustarlos a mano es subóptimo. Proponemos optimizarlos con un algoritmo
+genético \citep{holland1992,goldberg1989}. Cada \emph{individuo} es un vector de
+cuatro pesos normalizados ($\sum w_i=1$); su \emph{aptitud} (\emph{fitness}) es
+la tasa de victorias de un agente $\textsc{Minimax}(d,\mathbf{w})$ en $K$
+batallas contra la heurística básica. El ciclo evolutivo
+(Algoritmo~\ref{alg:ga}) combina \emph{selección por torneo} ($k=3$),
+\emph{cruce uniforme}, \emph{mutación gaussiana} ($p_m=0.15$, $\sigma=0.10$) y
+\emph{elitismo} (los $e$ mejores individuos pasan intactos), de modo que la
+mejor solución encontrada nunca se pierde. Así el aprendizaje evolutivo y la
+búsqueda adversaria operan de forma acoplada: el genético afina la evaluación
+que el minimax usa en las hojas.
+
+\begin{algorithm}[t]
+\caption{Algoritmo genético sobre minimax}
+\label{alg:ga}
+\small
+\begin{algorithmic}[1]
+\State Inicializar población $P$ de $N$ individuos aleatorios
+\For{$g=1$ \textbf{to} $G$}
+  \For{cada individuo $\mathbf{w}\in P$}
+    \State $\text{fit}(\mathbf{w})\gets$ win-rate de $\textsc{Minimax}(d,\mathbf{w})$
+    \Statex \hspace{2.2em} en $K$ batallas vs.\ heurística básica
+  \EndFor
+  \State $P'\gets$ los $e$ mejores de $P$ \Comment{elitismo}
+  \While{$|P'|<N$}
+    \State $p_1,p_2\gets$ \Call{Torneo}{$P$}, \Call{Torneo}{$P$}
+    \State $h\gets$ \Call{CruceUniforme}{$p_1,p_2$}
+    \State $h\gets$ \Call{Mutar}{$h,p_m,\sigma$}; normalizar $h$
+    \State $P'\gets P'\cup\{h\}$
+  \EndWhile
+  \State $P\gets P'$
+\EndFor
+\State \Return mejor individuo global
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Implementación}
+
+PokeFisi está escrito en Python con interfaz gráfica en Pygame
+\citep{pygame}. El motor de combate separa la lógica determinista de
+simulación (usada por los agentes para razonar) de la ejecución real con azar.
+Una optimización clave fue sustituir la copia profunda del estado por un clon
+ligero que comparte los datos inmutables (tipos, movimientos, estadísticas) y
+solo duplica el HP y los índices de activo, lo que aceleró la búsqueda minimax
+en torno a un orden de magnitud y volvió viable el algoritmo genético sobre
+minimax. La interfaz muestra además, en tiempo real, el ``razonamiento'' de cada
+agente: las acciones evaluadas, su puntuación y, para el minimax, el número de
+nodos explorados y de podas realizadas.
+
+\section{Experimentos}
+
+Evaluamos los agentes en tres bloques de experimentos. Salvo indicación
+contraria, cada batalla usa equipos de tres Pokémon muestreados al azar del
+\emph{roster} y, para eliminar el sesgo de actuar primero, en los duelos cada
+agente juega como Jugador~1 en la mitad de las partidas y como Jugador~2 en la
+otra mitad. Todas las cifras provienen de ejecuciones reales del sistema.
+
+\subsection{Experimento A: torneo todos contra todos}
+Enfrentamos cinco agentes ---Aleatorio, Heurística Básica, Heurística Avanzada,
+Minimax ($d{=}2$) y Genético (minimax $d{=}2$ con pesos evolucionados)--- en un
+torneo todos contra todos, con 40 batallas por
+emparejamiento. La Tabla~\ref{tab:torneo} reporta la tasa de victorias de cada
+agente (fila) frente a cada rival (columna) y su promedio global.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Agente} & Rand & Bás & Avz & Mmx & Gen & \textbf{Glob.} \\
+\midrule
+Aleatorio        & ---  & 27.5 & 15.0 & 35.0 & 27.5 & \textbf{26.2} \\
+H.\ Básica       & 72.5 & ---  & 45.0 & 65.0 & 70.0 & \textbf{63.1} \\
+H.\ Avanzada     & 85.0 & 55.0 & ---  & 57.5 & 55.0 & \textbf{63.1} \\
+Minimax $d{=}2$  & 65.0 & 35.0 & 42.5 & ---  & 45.0 & \textbf{46.9} \\
+Genético         & 72.5 & 30.0 & 45.0 & 55.0 & ---  & \textbf{50.6} \\
+\bottomrule
+\end{tabular}
+\caption{Tasa de victorias (\%) de cada agente (fila) frente a cada rival
+(columna) y promedio global, en el torneo todos contra todos
+(40 batallas por par, lados alternados).}
+\label{tab:torneo}
+\end{table}
+
+\subsection{Experimento B: profundidad y poda alfa-beta}
+Estudiamos cómo la profundidad $d$ del minimax afecta (i)~el coste de búsqueda y
+(ii)~la calidad de juego. Para el coste medimos, sobre
+40 estados iniciales aleatorios, el número medio de nodos
+explorados por decisión con y sin poda, junto con el tiempo por decisión
+(Tabla~\ref{tab:poda}, Figura~\ref{fig:poda}). Para la calidad medimos la tasa
+de victorias del minimax frente a la heurística básica a distintas profundidades
+(Tabla~\ref{tab:depthwin}).
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{ccccc}
+\toprule
+$d$ & Nodos (poda) & Nodos (sin) & Reducción & ms/dec. \\
+\midrule
+1 & 42.0      & 42.0       & 0.0\%  & 0.6 \\
+2 & 768.6     & 1\,547.2   & 50.3\% & 10.2 \\
+3 & 10\,003.8 & 54\,767.1  & 81.7\% & 131.5 \\
+\bottomrule
+\end{tabular}
+\caption{Coste de búsqueda por decisión según la profundidad, con y sin poda
+alfa-beta (promedio sobre 40 estados). La poda no altera la decisión y su
+ahorro crece con la profundidad.}
+\label{tab:poda}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+ & $d{=}1$ & $d{=}2$ & $d{=}3$ \\
+\midrule
+Win-rate vs H.\ Básica & 47.5\% & 32.5\% & 57.5\% \\
+\bottomrule
+\end{tabular}
+\caption{Tasa de victorias del minimax frente a la heurística básica según la
+profundidad (40 batallas por configuración).}
+\label{tab:depthwin}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{figs/poda_nodos.pdf}
+\caption{Nodos explorados por decisión según la profundidad, con y sin poda
+alfa-beta. La poda mantiene exactamente la misma decisión mientras reduce el
+trabajo, y la diferencia crece con la profundidad.}
+\label{fig:poda}
+\end{figure}
+
+\subsection{Experimento C: elitismo en el algoritmo genético}
+Analizamos el efecto del elitismo entrenando el genético con
+$e\in\{0,2,4\}$ individuos elitistas (población $N{=}12$, $G{=}10$ generaciones,
+$K{=}6$ batallas por evaluación, minimax $d{=}2$). La Figura~\ref{fig:elite}
+muestra la evolución del mejor fitness global por generación; la
+Tabla~\ref{tab:elite} resume el fitness final y el promedio final de la
+población.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lccc}
+\toprule
+Elitismo $e$ & 0 & 2 & 4 \\
+\midrule
+Fitness final del mejor   & 83.3\% & 100.0\% & 83.3\% \\
+Promedio final población  & 50.0\% & 51.4\%  & 54.2\% \\
+\bottomrule
+\end{tabular}
+\caption{Efecto del elitismo en el algoritmo genético (población 12,
+10 generaciones, 6 batallas por evaluación, minimax $d{=}2$).}
+\label{tab:elite}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{figs/elitismo_best.pdf}
+\caption{Mejor fitness global por generación según el número de individuos
+elitistas. Con $e>0$ la mejor solución nunca retrocede.}
+\label{fig:elite}
+\end{figure}
+
+\section{Resultados y Discusión}
+
+\paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo}) confirma que
+el agente aleatorio es, con diferencia, el más débil ($26.2\%$ global): cualquier
+forma de evaluación lo supera. Las dos heurísticas encabezan la tabla
+($63.1\%$ ambas), lo que indica que la función de evaluación de la
+ecuación~\eqref{eq:eval}, aun sin búsqueda, captura bien la situación de combate
+frente a rivales sencillos.
+
+\paragraph{El minimax no domina ``de fábrica''.} Un resultado revelador es que el
+minimax con $d{=}2$ ($46.9\%$) queda por debajo de las heurísticas e incluso
+pierde contra la básica ($35\%$). Atribuimos esto a dos causas. Primera, la
+formulación \emph{paranoid} supone que el rival juega para minimizar nuestra
+evaluación; contra oponentes simples que no juegan así, ese pesimismo conduce a
+decisiones excesivamente defensivas (p.\,ej.\ cambios innecesarios). Segunda,
+existe un desajuste de modelo: el minimax razona sobre el daño determinista de la
+ecuación~\eqref{eq:dano} ---con su penalización por velocidad $K$---, que es solo
+un \emph{proxy} del combate real estocástico, de modo que optimiza un objetivo
+ligeramente distinto al que decide la partida. La búsqueda, por sí sola, no basta
+si la evaluación o el modelo del rival no son fieles.
+
+\paragraph{El genético mejora la búsqueda.} El agente genético ($50.6\%$) supera
+al minimax con pesos por defecto y le gana el enfrentamiento directo ($55\%$).
+Es decir, evolucionar los pesos de la misma función de evaluación mejora el
+desempeño del minimax sin tocar el algoritmo de búsqueda, lo que valida la idea
+de acoplar aprendizaje evolutivo y búsqueda adversaria.
+
+\paragraph{Profundidad y poda alfa-beta.} El efecto más nítido aparece en el
+coste de búsqueda (Tabla~\ref{tab:poda}, Figura~\ref{fig:poda}): el número de
+nodos crece de forma explosiva con la profundidad ($42 \to 769 \to 10\,004$ con
+poda), y la poda alfa-beta recorta un $50.3\%$ de los nodos en $d{=}2$ y hasta un
+$81.7\%$ en $d{=}3$, \emph{sin alterar la decisión}. El ahorro aumenta con la
+profundidad, justo donde más se necesita, confirmando el papel de la poda
+\citep{knuth1975} para hacer viables búsquedas más profundas. En cuanto a la
+calidad (Tabla~\ref{tab:depthwin}), la tasa de victorias no es monótona
+($47.5\%$, $32.5\%$, $57.5\%$): con 40 batallas el margen de error es amplio
+($\sim\!\pm 8$ puntos) y, combinado con el pesimismo \emph{paranoid}, una
+profundidad intermedia puede perjudicar; aun así, la mayor profundidad ($d{=}3$)
+obtuvo el mejor resultado, coherente con que una mayor anticipación ayuda cuando
+el coste es asumible.
+
+\paragraph{Elitismo.} El mejor fitness global es monótono no decreciente por
+construcción ---guardamos siempre la mejor solución hallada---, por lo que su
+curva no cae con ningún valor de $e$ (Figura~\ref{fig:elite}); el papel real del
+elitismo es preservar a los mejores individuos \emph{dentro de la población} para
+que la reproducción construya sobre ellos. En nuestras corridas, con $e{=}2$ se
+alcanzó el techo de fitness ($100\%$), mientras que los promedios de población
+fueron similares entre configuraciones (Tabla~\ref{tab:elite}). No extraemos
+conclusiones fuertes: el fitness se mide sobre solo 6 batallas, por lo que toma
+valores en pasos de $\approx\!17\%$ y satura con facilidad en $83$--$100\%$, lo
+que limita la resolución del experimento.
+
+\paragraph{Amenazas a la validez.} Los tamaños de muestra son moderados, el daño
+de simulación es un \emph{proxy} determinista del combate real estocástico y el
+\emph{fitness} del genético es ruidoso. Estas limitaciones explican parte de la
+variabilidad observada y orientan el trabajo futuro.
+
+\section{Conclusiones}
+
+Desarrollamos PokeFisi, un simulador de combates Pokémon que integra una familia
+de agentes de decisión y permite compararlos de forma reproducible. El modelado
+del dominio como un problema de búsqueda adversaria con una función de
+evaluación basada en diferenciales acotados resultó suficientemente expresivo
+para todos los agentes y, al compartirse entre la heurística avanzada, el
+minimax y el genético, facilitó una comparación limpia.
+
+Los experimentos arrojan conclusiones matizadas. El azar es claramente la línea
+base y las heurísticas, pese a su simplicidad, resultaron muy competitivas. El
+minimax con poda no dominó de forma automática: su formulación pesimista y el
+desajuste entre el daño de simulación y el combate real lo penalizaron a
+profundidad baja, aunque mejoró con mayor anticipación ($d{=}3$). La poda
+alfa-beta, en cambio, se reveló inequívocamente útil, reduciendo los nodos
+explorados hasta un $82\%$ sin cambiar la decisión y haciendo asequibles las
+profundidades mayores. El algoritmo genético consiguió superar al minimax con
+pesos por defecto, evidenciando el valor de optimizar la evaluación; el efecto
+del elitismo, sin embargo, quedó enmascarado por el ruido del \emph{fitness} y
+no pudimos cuantificarlo con claridad.
+
+Como trabajo futuro proponemos: incorporar estados de alteración y mayor
+estocasticidad al modelo; sustituir la formulación \emph{paranoid} por una que
+capture mejor la simultaneidad (p.\,ej.\ equilibrios de estrategia mixta);
+ampliar el genético para coevolucionar contra rivales cada vez más fuertes; y
+reducir el ruido del \emph{fitness} aumentando las batallas por evaluación, ahora
+viable gracias a la optimización del motor.
+
+\bibliographystyle{acl_natbib}
+\bibliography{custom}
+
+\end{document}

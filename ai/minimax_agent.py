@@ -35,6 +35,8 @@ class MinimaxAgent(Agent):
         self.last_brain_data = None
         self._nodes  = 0   # nodos visitados en la búsqueda actual
         self._prunes = 0   # cortes alfa-beta en la búsqueda actual
+        # Poda alfa-beta activable; desactivarla permite medir su beneficio.
+        self.prune = True
 
     _MS_PER_DEPTH = {2: 50, 3: 280, 4: 1800}
 
@@ -183,7 +185,7 @@ class MinimaxAgent(Agent):
                     best = val
                 if best > alpha:
                     alpha = best
-                if beta <= alpha:
+                if beta <= alpha and self.prune:
                     self._prunes += 1
                     break   # poda β
             return best
@@ -200,7 +202,7 @@ class MinimaxAgent(Agent):
                     best = val
                 if best < beta:
                     beta = best
-                if beta <= alpha:
+                if beta <= alpha and self.prune:
                     self._prunes += 1
                     break   # poda α
             return best
