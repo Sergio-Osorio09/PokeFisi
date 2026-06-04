@@ -3,10 +3,7 @@ import pygame
 from config import WINDOW_WIDTH, WINDOW_HEIGHT, FPS, BG_COLOR
 from engine.loader import load_moves, build_team
 from engine.state import BattleState
-from ai.registry import AI_REGISTRY
-
-AI_NAMES     = [name    for name, _       in AI_REGISTRY]
-AI_FACTORIES = [factory for _,    factory in AI_REGISTRY]
+from ai import registry
 
 
 class GameManager:
@@ -32,6 +29,10 @@ class GameManager:
             from gui.screens.mode_select import ModeSelect
             self._screen = ModeSelect()
 
+        elif state_name == "TRAIN":
+            from gui.screens.train_screen import TrainScreen
+            self._screen = TrainScreen()
+
         elif state_name == "POKEMON_SELECT":
             mode, team_size, ai1_idx, ai2_idx = args
             self._mode_config = (mode, team_size, ai1_idx, ai2_idx)
@@ -44,16 +45,20 @@ class GameManager:
 
             team1 = build_team(team1_ids, self.all_moves)
 
+            # Derivar las factories del snapshot actual del registro (puede haberse
+            # refrescado tras entrenar en la GUI). El mismo orden que vio ModeSelect.
+            factories = [factory for _, factory in registry.AI_REGISTRY]
+
             if mode == "human_vs_ai":
                 team2  = build_team(team2_ids, self.all_moves)
                 agent1 = None
-                agent2 = AI_FACTORIES[ai2_idx]()
+                agent2 = factories[ai2_idx]()
                 label1 = "Jugador"
                 label2 = agent2.name
             else:
                 team2  = build_team(team2_ids, self.all_moves)
-                agent1 = AI_FACTORIES[ai1_idx]()
-                agent2 = AI_FACTORIES[ai2_idx]()
+                agent1 = factories[ai1_idx]()
+                agent2 = factories[ai2_idx]()
                 label1 = agent1.name
                 label2 = agent2.name
 

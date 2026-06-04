@@ -36,9 +36,10 @@ class ModeSelect:
                                 font_size=21, color=(120,40,120), hover_color=(170,60,170))
 
         # ── Registro de agentes ──────────────────────────────────────────────
-        from ai.registry import AI_REGISTRY
-        self.ai_options = [name for name, _ in AI_REGISTRY]
-        self._ai_data   = self._build_ai_data(AI_REGISTRY)
+        # Leer del módulo (no por valor) para reflejar refrescos tras entrenar.
+        from ai import registry
+        self.ai_options = [name for name, _ in registry.AI_REGISTRY]
+        self._ai_data   = self._build_ai_data(registry.AI_REGISTRY)
         self.ai1_idx = 0
         self.ai2_idx = 0
 

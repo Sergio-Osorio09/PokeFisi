@@ -81,7 +81,8 @@ def run_genetic(pop_size: int = 12,
                 mutation_rate: float = 0.15,
                 mutation_strength: float = 0.10,
                 elite_k: int = 2,
-                callback=None) -> dict:
+                callback=None,
+                should_stop=None) -> dict:
     """
     Ejecuta el algoritmo genético completo sobre Minimax.
 
@@ -101,6 +102,9 @@ def run_genetic(pop_size: int = 12,
     elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
     callback          : función opcional llamada al final de cada generación con
                         (gen, total, best_gen_fit, best_global_fit, avg_fit, population)
+    should_stop       : callable opcional sin args; si devuelve True se detiene la
+                        evolución tras la generación en curso y se retorna el mejor
+                        resultado obtenido hasta ese momento (cancelación cooperativa)
 
     Returns
     -------
@@ -142,6 +146,11 @@ def run_genetic(pop_size: int = 12,
         if callback:
             callback(gen, generations, gen_best_fit, best_fitness,
                      avg_fit, population[:])
+
+        # Cancelación cooperativa: detener tras una generación completa.
+        if should_stop is not None and should_stop() and best_weights is not None:
+            generations = gen   # reflejar las generaciones realmente ejecutadas
+            break
 
         # ── 2. Elitismo ───────────────────────────────────────────────────────
         sorted_pairs = sorted(zip(fitnesses, population), reverse=True)
