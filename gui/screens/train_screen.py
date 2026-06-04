@@ -27,7 +27,7 @@ _DEPTH_OPTS  = [2, 3]
 
 # Estimacion grosera de tiempo por batalla de minimax (ms), por profundidad.
 # Solo orienta al usuario; varia con la maquina.
-_MS_PER_BATTLE = {2: 100, 3: 550}
+_MS_PER_BATTLE = {2: 120, 3: 900}
 
 
 class TrainScreen:

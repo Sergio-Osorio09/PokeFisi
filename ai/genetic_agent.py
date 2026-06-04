@@ -40,6 +40,20 @@ class GeneticAgent(MinimaxAgent):
             f"Pesos: {w_str}",
         ]
 
+    def choose_action(self, state, player_id):
+        # Reusa toda la búsqueda minimax + panel cerebro del padre, y añade
+        # los pesos aprendidos (vs base) para mostrar su "personalidad".
+        action = super().choose_action(state, player_id)
+        if self.last_brain_data is not None:
+            labels = ["superv", "hp", "tipo", "vel"]
+            base   = self._WEIGHTS
+            self.last_brain_data["formula"] = (
+                f"minimax evolucionado (g={self._gens}, fitness {self._fit:.0%})")
+            self.last_brain_data["weights"] = [
+                (labels[i], self.weights[i], base[i]) for i in range(len(labels))
+            ]
+        return action
+
     def get_visual_stats(self) -> list[tuple]:
         """Datos estructurados para la tabla visual del selector GUI."""
         fit_b  = round(self._fit * 4) if isinstance(self._fit, float) else 0

@@ -1,4 +1,5 @@
 import random
+import time
 from ai.base_agent import Agent
 from engine.state import BattleState
 from engine.damage import get_type_multiplier
@@ -30,6 +31,10 @@ class MinimaxAgent(Agent):
         # Pesos de la función de evaluación. Si no se especifican se usan los
         # ajustados a mano; el Algoritmo Genético los puede sobreescribir.
         self.weights = weights if weights is not None else self._WEIGHTS[:]
+        # Datos para el panel "cerebro" de la GUI.
+        self.last_brain_data = None
+        self._nodes  = 0   # nodos visitados en la búsqueda actual
+        self._prunes = 0   # cortes alfa-beta en la búsqueda actual
 
     _MS_PER_DEPTH = {2: 50, 3: 280, 4: 1800}
 
@@ -55,8 +60,17 @@ class MinimaxAgent(Agent):
 
     def choose_action(self, state: BattleState, player_id: int) -> dict:
         opp_id = 3 - player_id
+        self._nodes  = 0
+        self._prunes = 0
+        t0 = time.perf_counter()
+
+        me  = state.get_active(player_id)
+        opp = state.get_active(opp_id)
+
         best_score  = float("-inf")
         best_action = None
+        best_idx    = 0
+        evaluations = []
 
         for action in self._possible_actions(state, player_id):
             score = self._minimax(
@@ -65,11 +79,81 @@ class MinimaxAgent(Agent):
                 player_id, opp_id,
                 my_action=action,
             )
+
+            damage = self._action_damage(state, player_id, action)
+            evaluations.append({
+                "name":         self._action_label(state, player_id, action),
+                "damage":       damage,
+                "opp_hp_after": max(0, opp.current_hp - damage),
+                "opp_max_hp":   opp.max_hp,
+                "my_hp_ratio":  me.hp_ratio(),
+                "score":        score,
+                "chosen":       False,
+            })
+
             if score > best_score:
                 best_score  = score
                 best_action = action
+                best_idx    = len(evaluations) - 1
 
+        if evaluations:
+            evaluations[best_idx]["chosen"] = True
+
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+
+        self.last_brain_data = {
+            "formula":     f"minimax + poda alfa-beta (d={self.depth}): valor anticipando al rival",
+            "evaluations": evaluations,
+            "stats": {
+                "nodos":  self._nodes,
+                "podas":  self._prunes,
+                "depth":  self.depth,
+                "ms":     elapsed_ms,
+            },
+            "pv": self._principal_variation(state, player_id, opp_id, best_action),
+        }
         return best_action
+
+    # ── Datos para el panel "cerebro" ─────────────────────────────────────────
+
+    def _action_label(self, state, player_id, action) -> str:
+        if action["type"] == "move":
+            moves = state.get_active(player_id).get_available_moves()
+            i = action["move_index"]
+            return moves[i].name if i < len(moves) else "?"
+        team = state.get_team(player_id)
+        return f"-> {team[action['pokemon_index']].name}"
+
+    def _action_damage(self, state, player_id, action) -> int:
+        """Daño inmediato del movimiento (solo para la barra; el score es el valor minimax)."""
+        if action["type"] != "move":
+            return 0
+        me    = state.get_active(player_id)
+        opp   = state.get_active(3 - player_id)
+        moves = me.get_available_moves()
+        i     = action["move_index"]
+        return self._sim_damage(me, moves[i], opp) if i < len(moves) else 0
+
+    def _principal_variation(self, state, player_id, opp_id, my_action) -> str:
+        """Línea predicha: mi mejor acción y la mejor réplica del rival (1 ply)."""
+        if my_action is None:
+            return ""
+        mine = self._action_label(state, player_id, my_action)
+
+        worst = float("inf")
+        best_opp = None
+        for opp_action in self._possible_actions(state, opp_id):
+            sim = state.copy()
+            self._apply_turn(sim, player_id, my_action, opp_action)
+            val = (self._evaluate_terminal(sim, player_id)
+                   if sim.is_terminal() else self._evaluate(sim, player_id))
+            if val < worst:
+                worst = val
+                best_opp = opp_action
+        if best_opp is None:
+            return f"yo: {mine}"
+        rival = self._action_label(state, opp_id, best_opp)
+        return f"yo: {mine}  ->  rival: {rival}"
 
     # ── Minimax recursivo ─────────────────────────────────────────────────────
 
@@ -81,6 +165,8 @@ class MinimaxAgent(Agent):
         my_action=None  → nodo MAX: elige mi acción.
         my_action=dict  → nodo MIN: elige acción del oponente, simula turno.
         """
+        self._nodes += 1
+
         if state.is_terminal():
             return self._evaluate_terminal(state, player_id)
 
@@ -98,6 +184,7 @@ class MinimaxAgent(Agent):
                 if best > alpha:
                     alpha = best
                 if beta <= alpha:
+                    self._prunes += 1
                     break   # poda β
             return best
 
@@ -114,6 +201,7 @@ class MinimaxAgent(Agent):
                 if best < beta:
                     beta = best
                 if beta <= alpha:
+                    self._prunes += 1
                     break   # poda α
             return best
 

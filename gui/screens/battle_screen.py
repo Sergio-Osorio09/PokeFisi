@@ -425,7 +425,12 @@ class BattleScreen:
 
         evals   = data["evaluations"]
         n       = len(evals)
-        row_h   = min(30, (h - 38) // max(n, 1))
+
+        # Reservar espacio inferior para extras de minimax/genetico.
+        extra_lines = sum(1 for k in ("stats", "pv", "weights") if k in data)
+        reserve     = extra_lines * 14 + 6 if extra_lines else 0
+        cap         = 26 if extra_lines else 30
+        row_h       = min(cap, (h - 38 - reserve) // max(n, 1))
 
         NAME_W  = 118
         BAR_X   = x + NAME_W + 10
@@ -497,6 +502,30 @@ class BattleScreen:
                 if cx > x + w - 40:
                     comp_y += 13
                     cx = x + 58
+
+        # Extras de Minimax / Genetico: estadisticas de busqueda, PV, pesos.
+        ey = y + 36 + n * row_h + 3
+        if "stats" in data:
+            st = data["stats"]
+            txt = (f"nodos:{st['nodos']}  podas a-b:{st['podas']}  "
+                   f"d={st['depth']}  {st['ms']:.0f}ms")
+            surface.blit(get_font(10).render(txt, True, (130, 200, 160)), (x + 6, ey))
+            ey += 14
+        if "pv" in data and data["pv"]:
+            pv_s = get_font(10).render(data["pv"][:60], True, (200, 200, 120))
+            surface.blit(pv_s, (x + 6, ey))
+            ey += 14
+        if "weights" in data:
+            cxx = x + 6
+            lbl = get_font(10).render("pesos:", True, (150, 150, 170))
+            surface.blit(lbl, (cxx, ey)); cxx += lbl.get_width() + 6
+            for (name, val, base) in data["weights"]:
+                col = (120, 220, 140) if val >= base else (220, 170, 120)
+                s   = get_font(10).render(f"{name} {val:.2f}", True, col)
+                surface.blit(s, (cxx, ey))
+                cxx += s.get_width() + 8
+                if cxx > x + w - 50:
+                    break
 
     # ── Ganador ───────────────────────────────────────────────────────────────
     def _draw_winner(self, surface: pygame.Surface):
