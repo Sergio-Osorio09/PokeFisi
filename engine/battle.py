@@ -2,6 +2,10 @@ import random
 from engine.state import BattleState
 from engine.damage import calculate_damage
 
+# Tope de turnos: evita batallas infinitas (p.ej. Normal vs Ghost que no se
+# pueden hacer daño, o agentes que solo cambian). Un 3v3 real acaba en <50.
+MAX_TURNS = 200
+
 
 class Battle:
     def __init__(self, state: BattleState, agent1, agent2):
@@ -15,16 +19,39 @@ class Battle:
         self.log.append(msg)
 
     def run(self):
-        while not self.state.is_terminal():
+        while not self.state.is_terminal() and self.state.turn_number < MAX_TURNS:
             self.step()
+
         winner = self.state.get_winner()
-        self._log(f"--- Batalla terminada. Ganador: Jugador {winner} ---")
+        if winner is None and self.state.is_terminal() is False:
+            # Se alcanzó el tope de turnos: decidir por desempate.
+            winner = self._winner_on_timeout()
+            self._log(f"--- Tope de {MAX_TURNS} turnos alcanzado. Ganador: {winner} ---")
+        else:
+            self._log(f"--- Batalla terminada. Ganador: Jugador {winner} ---")
+
         self.finished = True
         if self.agent1:
             self.agent1.on_battle_end(winner == 1)
         if self.agent2:
             self.agent2.on_battle_end(winner == 2)
         return winner
+
+    def _winner_on_timeout(self):
+        """Desempate al agotar turnos: más Pokémon vivos; si empatan, más HP
+        total; si aún empatan, sin ganador (None)."""
+        def alive(pid):
+            return sum(1 for p in self.state.get_team(pid) if p.is_alive())
+        def hp_total(pid):
+            return sum(p.hp_ratio() for p in self.state.get_team(pid))
+
+        a1, a2 = alive(1), alive(2)
+        if a1 != a2:
+            return 1 if a1 > a2 else 2
+        h1, h2 = hp_total(1), hp_total(2)
+        if abs(h1 - h2) > 1e-9:
+            return 1 if h1 > h2 else 2
+        return None
 
     def step(self):
         """Ejecuta un turno completo y retorna las líneas de log generadas."""

@@ -27,7 +27,7 @@ _DEPTH_OPTS  = [2, 3]
 
 # Estimacion grosera de tiempo por batalla de minimax (ms), por profundidad.
 # Solo orienta al usuario; varia con la maquina.
-_MS_PER_BATTLE = {2: 700, 3: 8500}
+_MS_PER_BATTLE = {2: 100, 3: 550}
 
 
 class TrainScreen:
@@ -253,11 +253,14 @@ class TrainScreen:
         surface.blit(pct, pct.get_rect(center=(cx, by + bar_h // 2)))
 
         # Fitness grande
+        bpe = _BATTLE_OPTS[self._bat_i]
         big = self.font_big.render(f"{best_global:.0%}", True, (120, 230, 150))
         surface.blit(big, big.get_rect(centerx=cx, top=210))
-        flbl = self.font_info.render("mejor fitness global", True, (180, 200, 180))
+        flbl = self.font_info.render(
+            f"mejor individuo (sobre {bpe} batallas; satura rapido)", True, (180, 200, 180))
         surface.blit(flbl, flbl.get_rect(centerx=cx, top=266))
-        albl = self.font_info.render(f"promedio ultima gen: {avg:.0%}", True, (180, 180, 200))
+        albl = self.font_info.render(
+            f"promedio poblacion (senal real): {avg:.0%}", True, (200, 200, 150))
         surface.blit(albl, albl.get_rect(centerx=cx, top=290))
 
         # Grafica de evolucion (best_global verde, promedio gris)

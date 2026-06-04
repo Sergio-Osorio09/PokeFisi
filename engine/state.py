@@ -1,4 +1,4 @@
-import copy
+import copy as _copy
 
 
 class BattleState:
@@ -57,7 +57,21 @@ class BattleState:
         return None
 
     def copy(self):
-        return copy.deepcopy(self)
+        """Clon ligero para simulaciones (minimax / heurísticas).
+
+        Durante una simulación lo único que se muta es ``current_hp`` de cada
+        Pokémon y los índices de activo. El resto (tipos, movimientos, stats)
+        es inmutable, así que basta una copia superficial de cada Pokémon
+        compartiendo esos datos: ~10-50x más rápido que ``deepcopy`` y
+        suficiente para que la simulación no corrompa el estado original.
+        """
+        new = BattleState.__new__(BattleState)
+        new.player1_team = [_copy.copy(p) for p in self.player1_team]
+        new.player2_team = [_copy.copy(p) for p in self.player2_team]
+        new.active_index_p1 = self.active_index_p1
+        new.active_index_p2 = self.active_index_p2
+        new.turn_number = self.turn_number
+        return new
 
     def __repr__(self):
         return (
