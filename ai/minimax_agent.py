@@ -24,9 +24,12 @@ class MinimaxAgent(Agent):
     _WEIGHTS  = [0.40, 0.35, 0.15, 0.10]
     _LABELS   = ["supervivencia", "hp_diff", "tipo", "velocidad"]
 
-    def __init__(self, depth: int = 2):
+    def __init__(self, depth: int = 2, weights: list[float] | None = None):
         super().__init__(f"Minimax d={depth}")
         self.depth = depth
+        # Pesos de la función de evaluación. Si no se especifican se usan los
+        # ajustados a mano; el Algoritmo Genético los puede sobreescribir.
+        self.weights = weights if weights is not None else self._WEIGHTS[:]
 
     _MS_PER_DEPTH = {2: 50, 3: 280, 4: 1800}
 
@@ -187,7 +190,7 @@ class MinimaxAgent(Agent):
 
         speed_adv = (me.speed - opp.speed) / _MAX_SPEED
 
-        w = self._WEIGHTS
+        w = self.weights
         return (
               w[0] * alive_diff
             + w[1] * hp_diff

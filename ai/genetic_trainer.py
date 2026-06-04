@@ -1,8 +1,10 @@
 """
-Entrenador basado en Algoritmos Genéticos.
+Entrenador basado en Algoritmos Genéticos sobre Minimax.
 
-Optimiza los 4 pesos de HeuristicaAvanzada buscando la combinación
-que maximiza el win-rate en batallas contra HeuristicaBasica.
+Optimiza los 4 pesos de la función de evaluación de MinimaxAgent (poda
+alfa-beta) buscando la combinación que maximiza el win-rate en batallas
+contra HeuristicaBasica. El AG evoluciona los pesos; cada individuo se mide
+jugando con un MinimaxAgent que usa esos pesos.
 """
 import random
 import json
@@ -11,7 +13,7 @@ import os
 from engine.loader import load_moves, build_team, load_all_pokemon
 from engine.state import BattleState
 from engine.battle import Battle
-from ai.heuristic_advanced import HeuristicAdvancedAgent
+from ai.minimax_agent import MinimaxAgent
 from ai.heuristic_basic import HeuristicBasicAgent
 
 _DATA_DIR = "data"
@@ -32,9 +34,10 @@ def _random_individual() -> list[float]:
 
 
 def _evaluate(weights: list[float], all_moves: dict,
-              all_ids: list[int], battles: int) -> float:
-    """Fitness = win-rate del individuo vs HeuristicaBasica en 'battles' batallas."""
-    agent    = HeuristicAdvancedAgent(weights=weights)
+              all_ids: list[int], battles: int, depth: int) -> float:
+    """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) que usa estos
+    pesos en su función de evaluación, jugando 'battles' batallas vs HeuristicaBasica."""
+    agent    = MinimaxAgent(depth=depth, weights=weights)
     opponent = HeuristicBasicAgent()
     wins     = 0
     for _ in range(battles):
@@ -71,21 +74,28 @@ def _mutate(individual: list[float], rate: float, strength: float) -> list[float
 
 # ── Ciclo principal ───────────────────────────────────────────────────────────
 
-def run_genetic(pop_size: int = 20,
-                generations: int = 30,
-                battles_per_eval: int = 10,
+def run_genetic(pop_size: int = 12,
+                generations: int = 15,
+                battles_per_eval: int = 6,
+                minimax_depth: int = 2,
                 mutation_rate: float = 0.15,
                 mutation_strength: float = 0.10,
                 elite_k: int = 2,
                 callback=None) -> dict:
     """
-    Ejecuta el algoritmo genético completo.
+    Ejecuta el algoritmo genético completo sobre Minimax.
+
+    Cada individuo es un vector de 4 pesos que se inyecta en la función de
+    evaluación de un MinimaxAgent (poda alfa-beta). Como el minimax es mucho
+    más costoso que la heurística directa, los valores por defecto de
+    población/generaciones/batallas son más conservadores.
 
     Parameters
     ----------
     pop_size          : número de individuos por generación
     generations       : número de generaciones a evolucionar
     battles_per_eval  : batallas que juega cada individuo para medir su fitness
+    minimax_depth     : profundidad del MinimaxAgent usado para evaluar cada individuo
     mutation_rate     : probabilidad de mutar cada gen  [0, 1]
     mutation_strength : desviación estándar de la mutación gaussiana
     elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
@@ -109,7 +119,7 @@ def run_genetic(pop_size: int = 20,
     for gen in range(1, generations + 1):
 
         # ── 1. Evaluación ─────────────────────────────────────────────────────
-        fitnesses = [_evaluate(w, all_moves, all_ids, battles_per_eval)
+        fitnesses = [_evaluate(w, all_moves, all_ids, battles_per_eval, minimax_depth)
                      for w in population]
 
         gen_best_idx = max(range(pop_size), key=lambda i: fitnesses[i])
@@ -153,6 +163,7 @@ def run_genetic(pop_size: int = 20,
         "generations":       generations,
         "pop_size":          pop_size,
         "battles_per_eval":  battles_per_eval,
+        "minimax_depth":     minimax_depth,
         "mutation_rate":     mutation_rate,
         "mutation_strength": mutation_strength,
         "elite_k":           elite_k,
@@ -164,8 +175,9 @@ def run_genetic(pop_size: int = 20,
 
 def save_genetic_weights(data: dict) -> str:
     os.makedirs(_DATA_DIR, exist_ok=True)
-    tag  = f"g{data['generations']}_p{data['pop_size']}"
-    path = os.path.join(_DATA_DIR, f"genetic_{tag}.json")
+    depth = data.get("minimax_depth", 2)
+    tag   = f"g{data['generations']}_p{data['pop_size']}_d{depth}"
+    path  = os.path.join(_DATA_DIR, f"genetic_{tag}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     return path

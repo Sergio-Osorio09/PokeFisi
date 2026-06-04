@@ -198,9 +198,13 @@ def _genetic_flow():
             except ValueError:
                 print("  [!] Ingresa un numero entero.")
 
-    pop_size  = ask_int("Tamaño de poblacion (min. 4)",  20, 4)
-    gens      = ask_int("Numero de generaciones (min. 5)", 30, 5)
-    battles   = ask_int("Batallas por evaluacion (min. 5)", 10, 5)
+    print("  El AG evoluciona los pesos de un Minimax (poda alfa-beta).")
+    print("  Minimax es costoso: valores altos pueden tardar varios minutos.\n")
+
+    pop_size  = ask_int("Tamaño de poblacion (min. 4)",     12, 4)
+    gens      = ask_int("Numero de generaciones (min. 5)",  15, 5)
+    battles   = ask_int("Batallas por evaluacion (min. 5)",  6, 5)
+    depth     = ask_int("Profundidad del Minimax (2 o 3)",   2, 2)
 
     labels = ["supervivencia", "hp_diff", "tipo", "velocidad"]
     total_evals = pop_size * gens
@@ -209,6 +213,7 @@ def _genetic_flow():
     print(f"    Poblacion         : {pop_size} individuos")
     print(f"    Generaciones      : {gens}")
     print(f"    Batallas/individuo: {battles}")
+    print(f"    Profundidad Minimax: {depth} turno(s)")
     print(f"    Total evaluaciones: {total_evals * battles} batallas aprox.")
     print(f"\n  Iniciando evolucion...\n")
 
@@ -224,6 +229,7 @@ def _genetic_flow():
         pop_size=pop_size,
         generations=gens,
         battles_per_eval=battles,
+        minimax_depth=depth,
         callback=_callback,
     )
 

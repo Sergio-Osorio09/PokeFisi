@@ -39,9 +39,10 @@ def _genetic_entries() -> list[tuple[str, object]]:
         p = path
         with open(p) as f:
             data = json.load(f)
-        gens = data.get("generations", "?")
-        pop  = data.get("pop_size",    "?")
-        entries.append((f"Genetico g={gens} p={pop}",
+        gens  = data.get("generations",  "?")
+        pop   = data.get("pop_size",     "?")
+        depth = data.get("minimax_depth", 2)
+        entries.append((f"Genetico g={gens} p={pop} d={depth}",
                         lambda p=p: load_genetic_agent(p)))
     return entries
 

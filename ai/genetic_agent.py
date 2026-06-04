@@ -1,28 +1,29 @@
 """
-Agente cuya función heurística fue optimizada por un Algoritmo Genético.
-Es esencialmente HeuristicaAvanzada con pesos evolucionados.
+Agente Minimax cuya función de evaluación fue optimizada por un Algoritmo Genético.
+Es esencialmente MinimaxAgent (poda alfa-beta) con los 4 pesos evolucionados.
 """
 import json
-from ai.heuristic_advanced import HeuristicAdvancedAgent
+from ai.minimax_agent import MinimaxAgent
 
 
-class GeneticAgent(HeuristicAdvancedAgent):
+class GeneticAgent(MinimaxAgent):
     """
-    HeuristicaAvanzada con pesos evolucionados por AG.
-    Hereda toda la lógica de evaluación y decisión;
+    MinimaxAgent con los pesos de su función de evaluación evolucionados por AG.
+    Hereda toda la lógica de búsqueda (minimax + poda alfa-beta) y evaluación;
     solo difiere en nombre, pesos y la información que muestra al usuario.
     """
 
     def __init__(self, weights: list[float], metadata: dict | None = None):
-        super().__init__(weights=weights)
         meta = metadata or {}
+        self._depth = meta.get("minimax_depth", 2)
+        super().__init__(depth=self._depth, weights=weights)
 
         self._gens  = meta.get("generations",       "?")
         self._pop   = meta.get("pop_size",           "?")
         self._fit   = meta.get("fitness",            0.0)
         self._bpe   = meta.get("battles_per_eval",   "?")
 
-        self.name              = f"Genetico g={self._gens}"
+        self.name              = f"Genetico g={self._gens} d={self._depth}"
         self.battles_trained   = self._gens
         self.win_rate_training = self._fit
 
@@ -33,7 +34,7 @@ class GeneticAgent(HeuristicAdvancedAgent):
         w      = self.weights
         w_str  = "  ".join(f"{l}:{w[i]:.2f}" for i, l in enumerate(labels))
         return [
-            "HeuristicaAvanzada optimizada con Algoritmo Genetico.",
+            f"Minimax (poda alfa-beta, d={self._depth}) optimizado con Algoritmo Genetico.",
             f"Generaciones: {self._gens}  Poblacion: {self._pop}"
             f"  Fitness: {self._fit:.0%}",
             f"Pesos: {w_str}",
@@ -46,9 +47,9 @@ class GeneticAgent(HeuristicAdvancedAgent):
         fit_pct = f"{self._fit:.0%}"  if isinstance(self._fit, float) else "?"
         gen_txt = f"{self._gens} gen" if isinstance(self._gens, int)  else "?"
         return [
-            ("Fitness",      fit_b, 4, fit_pct),
-            ("Generaciones", gen_b, 4, gen_txt),
-            ("Estrategia",   4,     4, "Evolutiva"),
+            ("Fitness",      fit_b,                4, fit_pct),
+            ("Generaciones", gen_b,                4, gen_txt),
+            ("Profundidad",  min(self._depth, 4),  4, f"{self._depth} turno(s)"),
         ]
 
 

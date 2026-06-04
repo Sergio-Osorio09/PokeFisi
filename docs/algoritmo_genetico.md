@@ -1,4 +1,4 @@
-# Algoritmo Genético — Optimización de la Heurística Avanzada
+# Algoritmo Genético — Optimización del Minimax (poda alfa-beta)
 
 ## ¿Qué es un Algoritmo Genético?
 
@@ -12,13 +12,22 @@ No se necesita saber de antemano cómo es la solución óptima — el algoritmo 
 
 ## El problema que resuelve en PokeFisi
 
-La `HeuristicaAvanzada` evalúa cada estado de batalla con una función de cuatro componentes:
+El `MinimaxAgent` (búsqueda con poda alfa-beta) evalúa cada estado de batalla
+con la misma función de cuatro componentes que la Heurística Avanzada:
 
 ```
 score = w0 * supervivencia  +  w1 * hp_diff  +  w2 * tipo  +  w3 * velocidad
 ```
 
-Los **pesos** `[w0, w1, w2, w3]` determinan qué tan importante es cada factor. Por defecto son `[0.40, 0.35, 0.15, 0.10]`, definidos a mano. El AG encuentra automáticamente cuáles pesos producen un agente que **gana más batallas**.
+Los **pesos** `[w0, w1, w2, w3]` determinan qué tan importante es cada factor en
+las hojas del árbol minimax. Por defecto son `[0.40, 0.35, 0.15, 0.10]`, definidos
+a mano. El AG encuentra automáticamente cuáles pesos hacen que el **Minimax** gane
+más batallas: cada individuo se mide jugando con un `MinimaxAgent` que usa esos pesos.
+
+> **Nota de costo:** evaluar con minimax es mucho más caro que con la heurística
+> directa (el minimax expande un árbol de varios turnos por decisión). Por eso los
+> valores por defecto del AG son más conservadores: `pop_size=12`, `generations=15`,
+> `battles_per_eval=6`, `minimax_depth=2`.
 
 ---
 
@@ -42,10 +51,11 @@ Los **pesos** `[w0, w1, w2, w3]` determinan qué tan importante es cada factor. 
 
 ```
 ai/
-├── genetic_trainer.py   ← Todo el algoritmo genético (funciones puras)
-├── genetic_agent.py     ← Agente que carga y usa los pesos evolucionados
+├── genetic_trainer.py     ← Todo el algoritmo genético (funciones puras)
+├── genetic_agent.py       ← GeneticAgent: subclase de MinimaxAgent con pesos evolucionados
+├── minimax_agent.py       ← MinimaxAgent: acepta `weights` que el AG inyecta en su evaluación
 data/
-└── genetic_g30_p20.json ← Pesos guardados tras entrenar (g=generaciones, p=población)
+└── genetic_g15_p12_d2.json ← Pesos guardados (g=generaciones, p=población, d=profundidad)
 ```
 
 ---
@@ -70,7 +80,8 @@ Ninguno sabe todavía qué tan bueno es. El AG lo descubrirá evaluando.
 
 ### Paso 1 — Evaluación de Fitness
 
-Cada individuo juega **K batallas** contra `HeuristicaBasica`. Su fitness es su win-rate.
+Cada individuo se inyecta como los pesos de un `MinimaxAgent` y juega **K batallas**
+contra `HeuristicaBasica`. Su fitness es su win-rate.
 
 ```
 Individuo 1: juega 10 batallas → gana 7  → fitness = 0.70
@@ -204,9 +215,10 @@ Gen 30/30  |  Mejor gen: █████████░ 90%  |  Mejor global: �
 
 | Parámetro | Valor por defecto | Efecto si sube | Efecto si baja |
 |---|---|---|---|
-| `pop_size` | 20 | Más diversidad, más lento | Converge más rápido, riesgo de estancarse |
-| `generations` | 30 | Más refinamiento | Menos exploración |
-| `battles_per_eval` | 10 | Fitness más preciso, más lento | Rápido pero ruidoso |
+| `pop_size` | 12 | Más diversidad, más lento | Converge más rápido, riesgo de estancarse |
+| `generations` | 15 | Más refinamiento | Menos exploración |
+| `battles_per_eval` | 6 | Fitness más preciso, más lento | Rápido pero ruidoso |
+| `minimax_depth` | 2 | Minimax más fuerte y mucho más lento por batalla | Más rápido, búsqueda más superficial |
 | `mutation_rate` | 15% | Más exploración, menos estabilidad | Converge rápido, poco novedoso |
 | `mutation_strength` | 0.10 | Cambios más grandes | Ajuste fino |
 | `elite_k` | 2 | Más conservador | Más riesgo de perder el mejor |
@@ -227,25 +239,27 @@ Al elegir la opción 4, se pedirán los parámetros y se mostrará el progreso g
 ```
 === Entrenar IA Genetica ===
 
-  Tamaño de poblacion (min. 4) [20]: 20
-  Numero de generaciones (min. 5) [30]: 30
-  Batallas por evaluacion (min. 5) [10]: 10
+  Tamaño de poblacion (min. 4) [12]: 12
+  Numero de generaciones (min. 5) [15]: 15
+  Batallas por evaluacion (min. 5) [6]: 6
+  Profundidad del Minimax (2 o 3) [2]: 2
 
   Configuracion:
-    Poblacion         : 20 individuos
-    Generaciones      : 30
-    Batallas/individuo: 10
-    Total evaluaciones: 6000 batallas aprox.
+    Poblacion         : 12 individuos
+    Generaciones      : 15
+    Batallas/individuo: 6
+    Profundidad Minimax: 2 turno(s)
+    Total evaluaciones: 1080 batallas aprox.
 
   Iniciando evolucion...
 
-  Gen   1/30  |  Mejor gen: ████████░░ 80%  |  ...
-  Gen   2/30  |  ...
+  Gen   1/15  |  Mejor gen: ████████░░ 80%  |  ...
+  Gen   2/15  |  ...
   ...
-  Gen  30/30  |  ...
+  Gen  15/15  |  ...
 
   Evolucion completada!
-  Guardado en: data/genetic_g30_p20.json
+  Guardado en: data/genetic_g15_p12_d2.json
   Fitness final: 90%
 
   Pesos evolucionados vs base:
@@ -274,15 +288,16 @@ velocidad:      0.07  (base 0.10)  ↓ menos importante en la práctica
 
 ## Formato del archivo guardado
 
-`data/genetic_g30_p20.json`:
+`data/genetic_g15_p12_d2.json`:
 
 ```json
 {
   "weights": [0.38, 0.41, 0.13, 0.07],
   "fitness": 0.90,
-  "generations": 30,
-  "pop_size": 20,
-  "battles_per_eval": 10,
+  "generations": 15,
+  "pop_size": 12,
+  "battles_per_eval": 6,
+  "minimax_depth": 2,
   "mutation_rate": 0.15,
   "mutation_strength": 0.10,
   "elite_k": 2,
@@ -303,6 +318,7 @@ El campo `history` permite graficar la curva de evolución post-entrenamiento.
 | Característica | Heurística entrenada (opción 3) | IA Genética (opción 4) |
 |---|---|---|
 | Algoritmo | Hill-climbing / búsqueda local | Algoritmo Genético |
+| Agente optimizado | HeuristicaAvanzada (evaluación 1 ply) | Minimax (poda alfa-beta, varios turnos) |
 | Población | 1 individuo | N individuos en paralelo |
 | Exploración | Local (un paso a la vez) | Global (toda la población) |
 | Riesgo de óptimo local | Alto | Bajo (la diversidad lo evita) |
@@ -318,7 +334,8 @@ INICIALIZAR población con N individuos aleatorios
 
 PARA gen EN 1..G:
     PARA cada individuo:
-        fitness[i] = win_rate(individuo[i], K batallas vs HeurBasica)
+        # el individuo son los pesos de un MinimaxAgent(depth=D)
+        fitness[i] = win_rate(Minimax(pesos=individuo[i]), K batallas vs HeurBasica)
 
     mejor_gen    = individuo con mayor fitness esta generación
     mejor_global = max(mejor_global, mejor_gen)   # nunca retrocede
