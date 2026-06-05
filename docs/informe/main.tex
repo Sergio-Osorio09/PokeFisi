@@ -293,6 +293,7 @@ agente (fila) frente a cada rival (columna) y su promedio global.
 \begin{table}[t]
 \centering\small
 \setlength{\tabcolsep}{3.5pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccccc|c}
 \toprule
 \textbf{Agente} & Rand & Bás & Avz & Mej & Mmx & Gen & \textbf{Glob.} \\
@@ -304,7 +305,7 @@ H.\ Mejorada    & 81.2 & 57.5 & 41.2 & ---  & 51.2 & 50.0 & \textbf{56.2} \\
 Minimax $d{=}2$ & 61.3 & 55.0 & 32.5 & 48.8 & ---  & 63.7 & \textbf{52.2} \\
 Genético        & 67.5 & 50.0 & 32.5 & 50.0 & 36.2 & ---  & \textbf{47.2} \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{Torneo todos contra todos (80 batallas por par, lados alternados):
 \% de victorias de cada agente (fila) frente a cada rival (columna) y promedio
 global. IC 95\% del global: Avanzada $[61.5,70.7]$, Mejorada $[51.4,61.0]$,
@@ -324,6 +325,7 @@ de victorias del minimax frente a la heurística básica a distintas profundidad
 
 \begin{table}[t]
 \centering\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{ccccc}
 \toprule
 $d$ & Nodos (poda) & Nodos (sin) & Reducción & ms/dec. \\
@@ -332,7 +334,7 @@ $d$ & Nodos (poda) & Nodos (sin) & Reducción & ms/dec. \\
 2 & 840.5     & 1\,549.7   & 45.8\% & 30.2 \\
 3 & 11\,018.6 & 54\,957.7  & 80.0\% & 177.4 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{Coste de búsqueda por decisión según la profundidad, con y sin poda
 alfa-beta (promedio sobre 40 estados). La poda no altera la decisión y su
 ahorro crece con la profundidad.}
@@ -341,6 +343,7 @@ ahorro crece con la profundidad.}
 
 \begin{table}[t]
 \centering\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
  & $d{=}1$ & $d{=}2$ & $d{=}3$ \\
@@ -349,7 +352,7 @@ Win-rate vs H.\ Básica & 52.5\% & 41.2\% & 45.0\% \\
 IC 95\% (Wilson)       & [41.7,\,63.1] & [31.1,\,52.2] & [34.6,\,55.9] \\
 Turnos por partida     & 10.1 & 10.8 & 12.8 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{Tasa de victorias del minimax frente a la heurística básica según la
 profundidad (80 batallas por configuración). Los intervalos de confianza se
 solapan ampliamente: no hay diferencia estadísticamente significativa en
@@ -376,13 +379,14 @@ Tabla~\ref{tab:elite} resume el fitness final (media $\pm$ desviación).
 
 \begin{table}[t]
 \centering\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
 Elitismo $e$ & 0 & 2 & 4 \\
 \midrule
 Fitness final (\%, media $\pm$ desv.) & $72.2 \pm 3.9$ & $66.7 \pm 0.0$ & $66.7 \pm 6.8$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{Efecto del elitismo en el algoritmo genético (población 8,
 8 generaciones, 12 batallas por evaluación con escenarios comunes, minimax
 $d{=}2$; media de 3 semillas). Las diferencias son pequeñas y se solapan: no se
@@ -411,6 +415,7 @@ bien generaliza cada uno en un mini-torneo.
 
 \begin{table}[t]
 \centering\small
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lcccc}
 \toprule
 Agente & vs Rand & vs Bás & vs Avz & Global \\
@@ -418,7 +423,7 @@ Agente & vs Rand & vs Bás & vs Avz & Global \\
 Minimax-$d2$ (paranoid)  & 63.3 & 45.0 & 38.3 & 48.9 \\
 Expectimax-$d2$ (modelo) & 65.0 & 50.0 & 38.3 & 51.1 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{(D1) Win-rate (\%) de la búsqueda \emph{paranoid} frente al
 \emph{expectimax}-contra-modelo (60 batallas por rival). IC 95\% del global:
 Minimax $[41.7,56.1]$, Expectimax $[43.9,58.3]$ (se solapan). Enfrentamiento
@@ -429,6 +434,7 @@ directo: $48.3\%$ a favor del Expectimax.}
 \begin{table}[t]
 \centering\small
 \setlength{\tabcolsep}{4pt}
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{lccccc}
 \toprule
 Fitness entrenado vs. & Rand & Bás & Avz & Mmx & Global \\
@@ -436,7 +442,7 @@ Fitness entrenado vs. & Rand & Bás & Avz & Mmx & Global \\
 1 rival (Básica)      & 83.3 & 61.7 & 56.7 & 46.7 & 62.1 \\
 Panel (R\,+\,B\,+\,A) & 78.3 & 56.7 & 50.0 & 63.3 & 62.1 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \caption{(D2) Generalización del genético según su \emph{fitness} de
 entrenamiento (60 batallas por rival). El entrenado contra un \emph{panel} rinde
 mucho mejor contra el rival \textbf{no visto} en entrenamiento (Minimax-$d2$:
