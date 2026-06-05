@@ -9,10 +9,11 @@ class MainMenu:
         self.font_title = get_font(64)
         self.font_sub = get_font(18)
         cx = WINDOW_WIDTH // 2
-        bw, bh = 280, 52
-        self.btn_battle = Button((cx - bw//2, 300, bw, bh), "NUEVA BATALLA",   font_size=24, color=(40,100,40),  hover_color=(60,150,60))
-        self.btn_train  = Button((cx - bw//2, 372, bw, bh), "ENTRENAR IA GENETICA", font_size=20, color=(110,70,150), hover_color=(150,100,200))
-        self.btn_exit   = Button((cx - bw//2, 444, bw, bh), "SALIR",           font_size=24, color=(120,30,30),  hover_color=(180,50,50))
+        bw, bh = 300, 50
+        self.btn_battle = Button((cx - bw//2, 290, bw, bh), "NUEVA BATALLA",        font_size=24, color=(40,100,40),  hover_color=(60,150,60))
+        self.btn_train  = Button((cx - bw//2, 352, bw, bh), "ENTRENAR IA GENETICA", font_size=20, color=(110,70,150), hover_color=(150,100,200))
+        self.btn_delete = Button((cx - bw//2, 414, bw, bh), "ELIMINAR IAS ENTRENADAS", font_size=18, color=(120,70,40), hover_color=(170,100,55))
+        self.btn_exit   = Button((cx - bw//2, 476, bw, bh), "SALIR",                font_size=24, color=(120,30,30),  hover_color=(180,50,50))
 
     def update(self, dt: int = 0):
         pass
@@ -28,6 +29,7 @@ class MainMenu:
 
         self.btn_battle.draw(surface)
         self.btn_train.draw(surface)
+        self.btn_delete.draw(surface)
         self.btn_exit.draw(surface)
 
     def handle_event(self, event: pygame.event.Event):
@@ -35,6 +37,8 @@ class MainMenu:
             return "MODE_SELECT"
         if self.btn_train.handle_event(event):
             return "TRAIN"
+        if self.btn_delete.handle_event(event):
+            return "DELETE"
         if self.btn_exit.handle_event(event):
             return "QUIT"
         return None

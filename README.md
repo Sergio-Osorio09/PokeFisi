@@ -163,7 +163,7 @@ Abre una ventana con menú, selección de Pokémon, entrenamiento de IA y pantal
 
 ### Modo GUI
 
-1. En el **menú principal** tienes tres botones: `NUEVA BATALLA`, `ENTRENAR IA GENETICA` y `SALIR`.
+1. En el **menú principal** tienes cuatro botones: `NUEVA BATALLA`, `ENTRENAR IA GENETICA`, `ELIMINAR IAS ENTRENADAS` (borra pesos guardados con confirmación) y `SALIR`.
 2. En `NUEVA BATALLA`, elige el modo: `HUMANO vs IA` o `IA vs IA`.
 3. Selecciona el agente de IA con los botones `<` y `>`. La pantalla muestra la descripción del agente y, según el tipo, sus **pesos** o una **tabla de capacidades** (profundidad, fitness, etc.) para comparar fácilmente entre opciones. Los agentes entrenados aparecen aquí automáticamente con su win-rate.
 4. Elige el tamaño del equipo (`3 vs 3` o `4 vs 4`) y pulsa `CONTINUAR`.
@@ -268,7 +268,7 @@ PokeFisi/
 │   └── registry.py       # Registro central de agentes disponibles
 ├── console/              # Modo consola (texto puro)
 ├── gui/                  # Interfaz gráfica con pygame
-│   ├── screens/          # Menú, selección, combate, resultados, entrenamiento
+│   ├── screens/          # Menú, selección, combate, resultados, entrenamiento, eliminación
 │   └── components/       # Botón, barra HP, tarjeta Pokémon, log de batalla
 ├── docs/
 │   ├── algoritmo_genetico.md  # Explicación del algoritmo genético

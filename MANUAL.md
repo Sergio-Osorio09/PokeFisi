@@ -70,7 +70,7 @@ El Pokémon más rápido actúa primero. Si un Pokémon queda con 0 HP, el jugad
 
 ### Paso 1 — Menú Principal
 
-Al ejecutar `python3 main.py --gui` aparece el menú principal con tres botones: **NUEVA BATALLA** (jugar), **ENTRENAR IA GENETICA** (evolucionar un agente, ver sección 10) y **SALIR**. Haz clic en `NUEVA BATALLA` para comenzar.
+Al ejecutar `python3 main.py --gui` aparece el menú principal con cuatro botones: **NUEVA BATALLA** (jugar), **ENTRENAR IA GENETICA** (evolucionar un agente, ver sección 10), **ELIMINAR IAS ENTRENADAS** (borrar pesos guardados —heurísticas y genéticos— con confirmación) y **SALIR**. Haz clic en `NUEVA BATALLA` para comenzar.
 
 ### Paso 2 — Selección de Modo
 

@@ -33,6 +33,10 @@ class GameManager:
             from gui.screens.train_screen import TrainScreen
             self._screen = TrainScreen()
 
+        elif state_name == "DELETE":
+            from gui.screens.delete_screen import DeleteScreen
+            self._screen = DeleteScreen()
+
         elif state_name == "POKEMON_SELECT":
             mode, team_size, ai1_idx, ai2_idx = args
             self._mode_config = (mode, team_size, ai1_idx, ai2_idx)
