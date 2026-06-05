@@ -31,17 +31,22 @@
 \begin{abstract}
 Presentamos \textbf{PokeFisi}, un simulador de combates Pokémon 3 contra 3 por
 turnos diseñado para estudiar y comparar agentes de toma de decisiones en un
-entorno adversario con información completa. Implementamos cinco estrategias de
-dificultad creciente: un agente \emph{aleatorio}, una \emph{heurística básica},
-una \emph{heurística avanzada}, un agente \emph{minimax con poda alfa-beta} y un
-\emph{algoritmo genético} que optimiza la función de evaluación del minimax. El
-trabajo describe el modelado del dominio (estados, daño, tipos y dinámica de
-turnos) y la formulación de cada algoritmo. Mediante experimentos sistemáticos
-medimos el desempeño relativo entre agentes, el efecto de la profundidad de
-búsqueda y el beneficio de la poda alfa-beta, y el impacto del elitismo en la
-convergencia del algoritmo genético. Los resultados confirman una jerarquía
-clara de competencia entre las estrategias y muestran que la poda alfa-beta
-reduce drásticamente el número de nodos explorados sin alterar la decisión.
+entorno adversario con información completa. Implementamos una familia de
+agentes de dificultad creciente: un agente \emph{aleatorio}, una
+\emph{heurística básica}, una \emph{heurística avanzada} (y una variante
+\emph{mejorada} de seis componentes), un agente \emph{minimax con poda
+alfa-beta} y un \emph{algoritmo genético} que optimiza la función de evaluación
+del minimax. El trabajo describe el modelado del dominio (estados, daño, tipos
+y dinámica de turnos) y la formulación de cada algoritmo. Mediante experimentos
+sistemáticos medimos el desempeño relativo entre agentes ---reportando la tasa
+de victorias con intervalos de confianza, la duración de las partidas y la tasa
+de empates---, el efecto de la profundidad de búsqueda y el beneficio de la poda
+alfa-beta, y el impacto del elitismo en la convergencia del algoritmo genético.
+Los resultados muestran que la poda alfa-beta reduce drásticamente el número de
+nodos explorados sin alterar la decisión, que una heurística avanzada bien
+calibrada resulta el agente más fuerte, y que el algoritmo genético, al optimizar
+su aptitud contra un único rival, sobreajusta y no generaliza ---un hallazgo
+ilustrativo sobre el diseño de funciones de aptitud.
 \end{abstract}
 
 \section{Introducción}
@@ -145,6 +150,13 @@ ventaja de velocidad del activo. Los pesos por defecto, ajustados manualmente,
 son $\mathbf{w}=(0.40,0.35,0.15,0.10)$. Esta misma evaluación se reutiliza en
 los dos agentes siguientes.
 
+\paragraph{3b. Heurística mejorada.} Como extensión exploramos una variante de
+\emph{seis} componentes que añade nociones tácticas: además de supervivencia,
+HP y velocidad, valora la \emph{amenaza de KO} (si puedo noquear al rival este
+turno), el \emph{peligro de ser noqueado} y la \emph{cobertura de tipos} del
+equipo. Comparte la misma mecánica de decisión a un nivel y se incluye en los
+experimentos como agente adicional.
+
 \paragraph{4. Minimax con poda alfa-beta.} Para mirar más allá de un turno
 empleamos búsqueda adversaria. Modelamos el combate ---intrínsecamente
 simultáneo--- mediante una formulación \emph{paranoid} con árbol alternante: en
@@ -193,7 +205,10 @@ ajustarlos a mano es subóptimo. Proponemos optimizarlos con un algoritmo
 genético \citep{holland1992,goldberg1989}. Cada \emph{individuo} es un vector de
 cuatro pesos normalizados ($\sum w_i=1$); su \emph{aptitud} (\emph{fitness}) es
 la tasa de victorias de un agente $\textsc{Minimax}(d,\mathbf{w})$ en $K$
-batallas contra la heurística básica. El ciclo evolutivo
+batallas contra la heurística básica. Para reducir la varianza del \emph{fitness}
+usamos \emph{Common Random Numbers}: todos los individuos de una generación se
+evalúan contra los \emph{mismos} emparejamientos y semillas, de modo que las
+diferencias de aptitud reflejan los pesos y no la suerte. El ciclo evolutivo
 (Algoritmo~\ref{alg:ga}) combina \emph{selección por torneo} ($k=3$),
 \emph{cruce uniforme}, \emph{mutación gaussiana} ($p_m=0.15$, $\sigma=0.10$) y
 \emph{elitismo} (los $e$ mejores individuos pasan intactos), de modo que la
@@ -234,9 +249,12 @@ Una optimización clave fue sustituir la copia profunda del estado por un clon
 ligero que comparte los datos inmutables (tipos, movimientos, estadísticas) y
 solo duplica el HP y los índices de activo, lo que aceleró la búsqueda minimax
 en torno a un orden de magnitud y volvió viable el algoritmo genético sobre
-minimax. La interfaz muestra además, en tiempo real, el ``razonamiento'' de cada
-agente: las acciones evaluadas, su puntuación y, para el minimax, el número de
-nodos explorados y de podas realizadas.
+minimax. La búsqueda del minimax es \emph{determinista} (los empates de
+velocidad se resuelven de forma fija dentro del árbol; el azar real ocurre solo
+en la batalla), de modo que un mismo estado siempre produce la misma decisión.
+La interfaz muestra además, en tiempo real, el ``razonamiento'' de cada agente:
+las acciones evaluadas, su puntuación y, para el minimax, el número de nodos
+explorados y de podas realizadas.
 
 \section{Experimentos}
 
@@ -244,32 +262,39 @@ Evaluamos los agentes en tres bloques de experimentos. Salvo indicación
 contraria, cada batalla usa equipos de tres Pokémon muestreados al azar del
 \emph{roster} y, para eliminar el sesgo de actuar primero, en los duelos cada
 agente juega como Jugador~1 en la mitad de las partidas y como Jugador~2 en la
-otra mitad. Todas las cifras provienen de ejecuciones reales del sistema.
+otra mitad. Reportamos la tasa de victorias con su \textbf{intervalo de
+confianza de Wilson al 95\%}, la \textbf{duración de las partidas} (turnos
+promedio) y la \textbf{tasa de empates} (partidas que alcanzan el tope de
+turnos sin un ganador claro). Todas las cifras provienen de ejecuciones reales
+del sistema.
 
 \subsection{Experimento A: torneo todos contra todos}
-Enfrentamos cinco agentes ---Aleatorio, Heurística Básica, Heurística Avanzada,
-Minimax ($d{=}2$) y Genético (minimax $d{=}2$ con pesos evolucionados)--- en un
-torneo todos contra todos, con 40 batallas por
+Enfrentamos seis agentes ---Aleatorio, Heurística Básica, Heurística Avanzada,
+Heurística Mejorada, Minimax ($d{=}2$) y Genético (minimax $d{=}2$ con pesos
+evolucionados)--- en un torneo todos contra todos, con 80 batallas por
 emparejamiento. La Tabla~\ref{tab:torneo} reporta la tasa de victorias de cada
 agente (fila) frente a cada rival (columna) y su promedio global.
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lcccccc}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccccc|c}
 \toprule
-\textbf{Agente} & Rand & Bás & Avz & Mmx & Gen & \textbf{Glob.} \\
+\textbf{Agente} & Rand & Bás & Avz & Mej & Mmx & Gen & \textbf{Glob.} \\
 \midrule
-Aleatorio        & ---  & 27.5 & 15.0 & 35.0 & 27.5 & \textbf{26.2} \\
-H.\ Básica       & 72.5 & ---  & 45.0 & 65.0 & 70.0 & \textbf{63.1} \\
-H.\ Avanzada     & 85.0 & 55.0 & ---  & 57.5 & 55.0 & \textbf{63.1} \\
-Minimax $d{=}2$  & 65.0 & 35.0 & 42.5 & ---  & 45.0 & \textbf{46.9} \\
-Genético         & 72.5 & 30.0 & 45.0 & 55.0 & ---  & \textbf{50.6} \\
+Aleatorio       & ---  & 13.8 & 18.8 & 18.8 & 38.8 & 32.5 & \textbf{24.5} \\
+H.\ Básica      & 86.2 & ---  & 43.8 & 42.5 & 45.0 & 50.0 & \textbf{53.5} \\
+H.\ Avanzada    & 81.2 & 56.2 & ---  & 58.8 & 67.5 & 67.5 & \textbf{66.2} \\
+H.\ Mejorada    & 81.2 & 57.5 & 41.2 & ---  & 51.2 & 50.0 & \textbf{56.2} \\
+Minimax $d{=}2$ & 61.3 & 55.0 & 32.5 & 48.8 & ---  & 63.7 & \textbf{52.2} \\
+Genético        & 67.5 & 50.0 & 32.5 & 50.0 & 36.2 & ---  & \textbf{47.2} \\
 \bottomrule
 \end{tabular}
-\caption{Tasa de victorias (\%) de cada agente (fila) frente a cada rival
-(columna) y promedio global, en el torneo todos contra todos
-(40 batallas por par, lados alternados).}
+\caption{Torneo todos contra todos (80 batallas por par, lados alternados):
+\% de victorias de cada agente (fila) frente a cada rival (columna) y promedio
+global. IC 95\% del global: Avanzada $[61.5,70.7]$, Mejorada $[51.4,61.0]$,
+Minimax $[47.4,57.1]$, Básica $[48.6,58.3]$, Genético $[42.4,52.1]$,
+Aleatorio $[20.5,28.9]$. Duración media: 10.9 turnos; empates: 0\%.}
 \label{tab:torneo}
 \end{table}
 
@@ -288,9 +313,9 @@ de victorias del minimax frente a la heurística básica a distintas profundidad
 \toprule
 $d$ & Nodos (poda) & Nodos (sin) & Reducción & ms/dec. \\
 \midrule
-1 & 42.0      & 42.0       & 0.0\%  & 0.6 \\
-2 & 768.6     & 1\,547.2   & 50.3\% & 10.2 \\
-3 & 10\,003.8 & 54\,767.1  & 81.7\% & 131.5 \\
+1 & 42.0      & 42.0       & 0.0\%  & 2.0 \\
+2 & 840.5     & 1\,549.7   & 45.8\% & 30.2 \\
+3 & 11\,018.6 & 54\,957.7  & 80.0\% & 177.4 \\
 \bottomrule
 \end{tabular}
 \caption{Coste de búsqueda por decisión según la profundidad, con y sin poda
@@ -305,11 +330,15 @@ ahorro crece con la profundidad.}
 \toprule
  & $d{=}1$ & $d{=}2$ & $d{=}3$ \\
 \midrule
-Win-rate vs H.\ Básica & 47.5\% & 32.5\% & 57.5\% \\
+Win-rate vs H.\ Básica & 52.5\% & 41.2\% & 45.0\% \\
+IC 95\% (Wilson)       & [41.7,\,63.1] & [31.1,\,52.2] & [34.6,\,55.9] \\
+Turnos por partida     & 10.1 & 10.8 & 12.8 \\
 \bottomrule
 \end{tabular}
 \caption{Tasa de victorias del minimax frente a la heurística básica según la
-profundidad (40 batallas por configuración).}
+profundidad (80 batallas por configuración). Los intervalos de confianza se
+solapan ampliamente: no hay diferencia estadísticamente significativa en
+win-rate, aunque las partidas duran más a mayor profundidad.}
 \label{tab:depthwin}
 \end{table}
 
@@ -324,11 +353,11 @@ trabajo, y la diferencia crece con la profundidad.}
 
 \subsection{Experimento C: elitismo en el algoritmo genético}
 Analizamos el efecto del elitismo entrenando el genético con
-$e\in\{0,2,4\}$ individuos elitistas (población $N{=}12$, $G{=}10$ generaciones,
-$K{=}6$ batallas por evaluación, minimax $d{=}2$). La Figura~\ref{fig:elite}
-muestra la evolución del mejor fitness global por generación; la
-Tabla~\ref{tab:elite} resume el fitness final y el promedio final de la
-población.
+$e\in\{0,2,4\}$ individuos elitistas (población $N{=}8$, $G{=}8$ generaciones,
+$K{=}12$ batallas por evaluación con escenarios comunes, minimax $d{=}2$),
+promediando \textbf{3 semillas} independientes. La Figura~\ref{fig:elite}
+muestra la evolución del fitness promedio de la población; la
+Tabla~\ref{tab:elite} resume el fitness final (media $\pm$ desviación).
 
 \begin{table}[t]
 \centering\small
@@ -336,79 +365,82 @@ población.
 \toprule
 Elitismo $e$ & 0 & 2 & 4 \\
 \midrule
-Fitness final del mejor   & 83.3\% & 100.0\% & 83.3\% \\
-Promedio final población  & 50.0\% & 51.4\%  & 54.2\% \\
+Fitness final (\%, media $\pm$ desv.) & $72.2 \pm 3.9$ & $66.7 \pm 0.0$ & $66.7 \pm 6.8$ \\
 \bottomrule
 \end{tabular}
-\caption{Efecto del elitismo en el algoritmo genético (población 12,
-10 generaciones, 6 batallas por evaluación, minimax $d{=}2$).}
+\caption{Efecto del elitismo en el algoritmo genético (población 8,
+8 generaciones, 12 batallas por evaluación con escenarios comunes, minimax
+$d{=}2$; media de 3 semillas). Las diferencias son pequeñas y se solapan: no se
+observa una ventaja clara del elitismo sobre el fitness final en esta escala.}
 \label{tab:elite}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.95\columnwidth]{figs/elitismo_best.pdf}
-\caption{Mejor fitness global por generación según el número de individuos
-elitistas. Con $e>0$ la mejor solución nunca retrocede.}
+\includegraphics[width=0.95\columnwidth]{figs/elitismo_avg.pdf}
+\caption{Fitness \emph{promedio de la población} por generación según el número
+de individuos elitistas (media de varias semillas). El promedio ---y no el mejor
+global, que es monótono por construcción--- refleja la calidad real de la
+población.}
 \label{fig:elite}
 \end{figure}
 
 \section{Resultados y Discusión}
 
-\paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo}) confirma que
-el agente aleatorio es, con diferencia, el más débil ($26.2\%$ global): cualquier
-forma de evaluación lo supera. Las dos heurísticas encabezan la tabla
-($63.1\%$ ambas), lo que indica que la función de evaluación de la
-ecuación~\eqref{eq:eval}, aun sin búsqueda, captura bien la situación de combate
-frente a rivales sencillos.
+\paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo}) sitúa al
+agente aleatorio como el más débil con claridad ($24.5\%$ global, IC
+$[20.5,28.9]$): cualquier forma de evaluación lo supera. En el otro extremo, la
+\textbf{Heurística Avanzada es el mejor agente} ($66.2\%$, IC $[61.5,70.7]$), por
+encima del resto sin solapamiento de intervalos. El grupo intermedio
+---Mejorada ($56.2\%$), Básica ($53.5\%$) y Minimax-$d2$ ($52.2\%$)--- tiene
+intervalos que se solapan, por lo que sus diferencias no son significativas.
 
-\paragraph{El minimax no domina ``de fábrica''.} Un resultado revelador es que el
-minimax con $d{=}2$ ($46.9\%$) queda por debajo de las heurísticas e incluso
-pierde contra la básica ($35\%$). Atribuimos esto a dos causas. Primera, la
-formulación \emph{paranoid} supone que el rival juega para minimizar nuestra
-evaluación; contra oponentes simples que no juegan así, ese pesimismo conduce a
-decisiones excesivamente defensivas (p.\,ej.\ cambios innecesarios). Segunda,
-existe un desajuste de modelo: el minimax razona sobre el daño determinista de la
-ecuación~\eqref{eq:dano} ---con su penalización por velocidad $K$---, que es solo
-un \emph{proxy} del combate real estocástico, de modo que optimiza un objetivo
-ligeramente distinto al que decide la partida. La búsqueda, por sí sola, no basta
-si la evaluación o el modelo del rival no son fieles.
+\paragraph{El determinismo vuelve competitivo al minimax, pero la búsqueda no
+supera a la mejor heurística.} Tras eliminar el azar interno de la búsqueda
+(Sección~2.3), el Minimax-$d2$ pasa a competir de igual a igual con las
+heurísticas del grupo intermedio. Sin embargo, la Heurística Avanzada a un solo
+nivel \emph{le gana} ($67.5\%$). Lo atribuimos a la formulación \emph{paranoid}
+---el minimax supone que el rival juega siempre para perjudicarlo, lo que induce
+juego sobre-defensivo--- y a que las partidas son cortas (media de $10.9$
+turnos), de modo que anticipar dos turnos aporta poco frente a una evaluación de
+una jugada bien calibrada.
 
-\paragraph{El genético mejora la búsqueda.} El agente genético ($50.6\%$) supera
-al minimax con pesos por defecto y le gana el enfrentamiento directo ($55\%$).
-Es decir, evolucionar los pesos de la misma función de evaluación mejora el
-desempeño del minimax sin tocar el algoritmo de búsqueda, lo que valida la idea
-de acoplar aprendizaje evolutivo y búsqueda adversaria.
+\paragraph{El genético sobreajusta a su rival de entrenamiento.} Aunque el
+algoritmo genético optimiza con éxito su \emph{fitness} (win-rate vs.\ Heurística
+Básica), el agente resultante es el más débil de los informados en el torneo
+($47.2\%$) y pierde contra el Minimax con pesos por defecto ($36.2\%$). Los pesos
+evolucionados se especializan en exceso (cargan casi todo el peso en la ventaja
+de tipo) y \emph{no generalizan} a oponentes distintos al de entrenamiento. Es un
+caso de manual de \textbf{sobreajuste de la función de aptitud}: optimizar contra
+un único rival débil produce una solución frágil. Esto motiva evaluar el fitness
+contra un panel de rivales o mediante auto-juego (trabajo futuro).
 
-\paragraph{Profundidad y poda alfa-beta.} El efecto más nítido aparece en el
-coste de búsqueda (Tabla~\ref{tab:poda}, Figura~\ref{fig:poda}): el número de
-nodos crece de forma explosiva con la profundidad ($42 \to 769 \to 10\,004$ con
-poda), y la poda alfa-beta recorta un $50.3\%$ de los nodos en $d{=}2$ y hasta un
-$81.7\%$ en $d{=}3$, \emph{sin alterar la decisión}. El ahorro aumenta con la
-profundidad, justo donde más se necesita, confirmando el papel de la poda
-\citep{knuth1975} para hacer viables búsquedas más profundas. En cuanto a la
-calidad (Tabla~\ref{tab:depthwin}), la tasa de victorias no es monótona
-($47.5\%$, $32.5\%$, $57.5\%$): con 40 batallas el margen de error es amplio
-($\sim\!\pm 8$ puntos) y, combinado con el pesimismo \emph{paranoid}, una
-profundidad intermedia puede perjudicar; aun así, la mayor profundidad ($d{=}3$)
-obtuvo el mejor resultado, coherente con que una mayor anticipación ayuda cuando
-el coste es asumible.
+\paragraph{Profundidad y poda alfa-beta.} El resultado más nítido y robusto está
+en el coste de búsqueda (Tabla~\ref{tab:poda}, Figura~\ref{fig:poda}): el número
+de nodos crece de forma explosiva con la profundidad ($42 \to 841 \to 11\,019$
+con poda), y la poda alfa-beta recorta un $45.8\%$ de los nodos en $d{=}2$ y un
+$80.0\%$ en $d{=}3$, \emph{sin alterar la decisión} \citep{knuth1975}. El ahorro
+crece con la profundidad, justo donde más se necesita. En cambio, sobre la
+\emph{calidad} (Tabla~\ref{tab:depthwin}) los intervalos de confianza se solapan
+($52.5\%$, $41.2\%$, $45.0\%$): no hay efecto significativo de la profundidad en
+el win-rate frente a la Básica, aunque sí se observa que las partidas
+\textbf{duran más a mayor profundidad} ($10.1 \to 12.8$ turnos), reflejo de un
+juego más cauteloso.
 
-\paragraph{Elitismo.} El mejor fitness global es monótono no decreciente por
-construcción ---guardamos siempre la mejor solución hallada---, por lo que su
-curva no cae con ningún valor de $e$ (Figura~\ref{fig:elite}); el papel real del
-elitismo es preservar a los mejores individuos \emph{dentro de la población} para
-que la reproducción construya sobre ellos. En nuestras corridas, con $e{=}2$ se
-alcanzó el techo de fitness ($100\%$), mientras que los promedios de población
-fueron similares entre configuraciones (Tabla~\ref{tab:elite}). No extraemos
-conclusiones fuertes: el fitness se mide sobre solo 6 batallas, por lo que toma
-valores en pasos de $\approx\!17\%$ y satura con facilidad en $83$--$100\%$, lo
-que limita la resolución del experimento.
+\paragraph{Elitismo.} Medimos el efecto del elitismo sobre el fitness final
+promediando 3 semillas (Tabla~\ref{tab:elite}, Figura~\ref{fig:elite}). Las
+diferencias entre $e\in\{0,2,4\}$ son pequeñas y se solapan ($72.2\%$, $66.7\%$,
+$66.7\%$), por lo que \textbf{no observamos una ventaja clara} del elitismo a
+esta escala. Cabe recordar que el mejor fitness global es monótono por
+construcción ---se conserva siempre la mejor solución---, así que el efecto real
+del elitismo está en preservar buenos individuos \emph{en la población};
+cuantificarlo con nitidez exigiría poblaciones y generaciones mayores.
 
-\paragraph{Amenazas a la validez.} Los tamaños de muestra son moderados, el daño
-de simulación es un \emph{proxy} determinista del combate real estocástico y el
-\emph{fitness} del genético es ruidoso. Estas limitaciones explican parte de la
-variabilidad observada y orientan el trabajo futuro.
+\paragraph{Amenazas a la validez.} Pese a usar $80$ batallas por par e intervalos
+de confianza, los márgenes siguen siendo de $\pm 5$ puntos, y el daño de
+simulación es un \emph{proxy} determinista del combate real estocástico. La
+formulación \emph{paranoid} y el fitness contra un solo rival son las
+limitaciones de modelado más relevantes, y orientan el trabajo futuro.
 
 \section{Conclusiones}
 
@@ -420,23 +452,24 @@ para todos los agentes y, al compartirse entre la heurística avanzada, el
 minimax y el genético, facilitó una comparación limpia.
 
 Los experimentos arrojan conclusiones matizadas. El azar es claramente la línea
-base y las heurísticas, pese a su simplicidad, resultaron muy competitivas. El
-minimax con poda no dominó de forma automática: su formulación pesimista y el
-desajuste entre el daño de simulación y el combate real lo penalizaron a
-profundidad baja, aunque mejoró con mayor anticipación ($d{=}3$). La poda
-alfa-beta, en cambio, se reveló inequívocamente útil, reduciendo los nodos
-explorados hasta un $82\%$ sin cambiar la decisión y haciendo asequibles las
-profundidades mayores. El algoritmo genético consiguió superar al minimax con
-pesos por defecto, evidenciando el valor de optimizar la evaluación; el efecto
-del elitismo, sin embargo, quedó enmascarado por el ruido del \emph{fitness} y
-no pudimos cuantificarlo con claridad.
+base; la \emph{Heurística Avanzada} bien calibrada fue el agente más fuerte, por
+encima incluso del minimax. Al volver determinista la búsqueda, el minimax pasó a
+ser competitivo, pero su formulación \emph{paranoid} y la corta duración de las
+partidas hacen que anticipar turnos aporte poco frente a una buena evaluación a
+un nivel. La poda alfa-beta se reveló inequívocamente útil, reduciendo los nodos
+explorados hasta un $80\%$ sin cambiar la decisión y haciendo asequibles las
+profundidades mayores. El algoritmo genético optimizó con éxito su aptitud, pero
+\emph{sobreajustó} a su único rival de entrenamiento y no generalizó al resto del
+torneo ---un recordatorio de la importancia de diseñar bien la función de
+aptitud. El efecto del elitismo, por su parte, no fue concluyente a la escala
+estudiada.
 
-Como trabajo futuro proponemos: incorporar estados de alteración y mayor
-estocasticidad al modelo; sustituir la formulación \emph{paranoid} por una que
-capture mejor la simultaneidad (p.\,ej.\ equilibrios de estrategia mixta);
-ampliar el genético para coevolucionar contra rivales cada vez más fuertes; y
-reducir el ruido del \emph{fitness} aumentando las batallas por evaluación, ahora
-viable gracias a la optimización del motor.
+Como trabajo futuro proponemos: evaluar el \emph{fitness} del genético contra un
+panel de rivales o mediante auto-juego (para evitar el sobreajuste observado);
+sustituir la formulación \emph{paranoid} por una que capture la simultaneidad
+(p.\,ej.\ equilibrios de estrategia mixta) sin renunciar a la poda alfa-beta;
+ampliar los tamaños de muestra para estrechar los intervalos de confianza; y
+enriquecer el modelo con estados de alteración y mayor estocasticidad.
 
 % acl.sty ya define \bibliographystyle{acl_natbib}, no hay que repetirlo.
 \bibliography{custom}
