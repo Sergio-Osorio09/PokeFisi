@@ -335,7 +335,7 @@ INICIALIZAR población con N individuos aleatorios
 PARA gen EN 1..G:
     PARA cada individuo:
         # el individuo son los pesos de un MinimaxAgent(depth=D)
-        fitness[i] = win_rate(Minimax(pesos=individuo[i]), K batallas vs HeurBasica)
+        fitness[i] = win_rate(Minimax(pesos=individuo[i]), K batallas vs panel de rivales)
 
     mejor_gen    = individuo con mayor fitness esta generación
     mejor_global = max(mejor_global, mejor_gen)   # nunca retrocede

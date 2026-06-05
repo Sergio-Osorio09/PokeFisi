@@ -14,7 +14,17 @@ from engine.loader import load_moves, build_team, load_all_pokemon
 from engine.state import BattleState
 from engine.battle import Battle
 from ai.minimax_agent import MinimaxAgent
+from ai.random_agent import RandomAgent
 from ai.heuristic_basic import HeuristicBasicAgent
+from ai.heuristic_advanced import HeuristicAdvancedAgent
+
+
+def default_opponent_panel() -> list:
+    """Panel de rivales recomendado para el fitness: cubre un rango de
+    dificultad (azar, heurística simple y heurística avanzada). Entrenar contra
+    el panel produce pesos más robustos y que generalizan mejor que entrenar
+    contra un único rival (ver Experimento D del informe)."""
+    return [RandomAgent, HeuristicBasicAgent, HeuristicAdvancedAgent]
 
 _DATA_DIR = "data"
 _N_WEIGHTS = 4
@@ -238,6 +248,7 @@ def run_genetic(pop_size: int = 12,
         "mutation_rate":     mutation_rate,
         "mutation_strength": mutation_strength,
         "elite_k":           elite_k,
+        "opponents":         [c().name for c in opponent_factories],
         "history":           history,
     }
 

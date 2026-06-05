@@ -13,7 +13,7 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font
 from gui.components.button import Button
-from ai.genetic_trainer import run_genetic, save_genetic_weights
+from ai.genetic_trainer import run_genetic, save_genetic_weights, default_opponent_panel
 from ai.registry import refresh_registry
 from ai.heuristic_advanced import DEFAULT_WEIGHTS
 
@@ -135,6 +135,7 @@ class TrainScreen:
                 generations=gen,
                 battles_per_eval=bat,
                 minimax_depth=depth,
+                opponent_factories=default_opponent_panel(),
                 callback=self._on_generation,
                 progress_cb=self._on_progress,
                 should_stop=lambda: self._cancel,
@@ -186,7 +187,7 @@ class TrainScreen:
         surface.blit(title, title.get_rect(centerx=cx, top=55))
 
         sub = self.font_info.render(
-            "El AG evoluciona los pesos de un Minimax (poda alfa-beta).",
+            "El AG evoluciona los pesos de un Minimax contra un panel (Random/Basica/Avanzada).",
             True, (190, 190, 210))
         surface.blit(sub, sub.get_rect(centerx=cx, top=108))
         sub2 = self.font_info.render(
@@ -331,7 +332,7 @@ class TrainScreen:
         fit = data.get("fitness", 0.0) if data else 0.0
         big = self.font_big.render(f"{fit:.0%}", True, (120, 230, 150))
         surface.blit(big, big.get_rect(centerx=cx, top=110))
-        flbl = self.font_info.render("fitness final (win-rate vs Heuristica Basica)",
+        flbl = self.font_info.render("fitness final (win-rate vs panel: Random/Basica/Avanzada)",
                                      True, (180, 200, 180))
         surface.blit(flbl, flbl.get_rect(centerx=cx, top=168))
 

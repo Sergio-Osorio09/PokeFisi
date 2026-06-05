@@ -179,7 +179,7 @@ def _improved_train_flow():
 # ── Entrenamiento genético ────────────────────────────────────────────────────
 
 def _genetic_flow():
-    from ai.genetic_trainer import run_genetic, save_genetic_weights
+    from ai.genetic_trainer import run_genetic, save_genetic_weights, default_opponent_panel
     from ai.heuristic_advanced import DEFAULT_WEIGHTS
 
     print("\n=== Entrenar IA Genetica ===")
@@ -199,6 +199,7 @@ def _genetic_flow():
                 print("  [!] Ingresa un numero entero.")
 
     print("  El AG evoluciona los pesos de un Minimax (poda alfa-beta).")
+    print("  Fitness: win-rate vs panel (Random, Basica, Avanzada).")
     print("  Minimax es costoso: valores altos pueden tardar varios minutos.\n")
 
     pop_size  = ask_int("Tamaño de poblacion (min. 4)",      12, 4)
@@ -230,6 +231,7 @@ def _genetic_flow():
         generations=gens,
         battles_per_eval=battles,
         minimax_depth=depth,
+        opponent_factories=default_opponent_panel(),
         callback=_callback,
     )
 

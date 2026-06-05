@@ -227,7 +227,7 @@ Ejecuta `python main.py --console` (Windows) o `python3 main.py --console` (Linu
 
 - **Opción 3 — Entrenar Heurística Avanzada:** ajusta sus 4 pesos por *stochastic hill-climbing* contra una mezcla de rivales. Guarda `data/weights_N.json` y crea el agente `HeuristicaAvanzada-N`.
 - **Opción 4 — Entrenar Heurística Mejorada:** igual, para los 6 componentes de la Mejorada (`data/weights_improved_N.json`).
-- **Opción 5 — Entrenar IA Genética:** evoluciona con un **algoritmo genético** los pesos de la evaluación que usa el **Minimax**. Pide población, generaciones, batallas por evaluación y profundidad; guarda `data/genetic_gG_pP_dD.json`.
+- **Opción 5 — Entrenar IA Genética:** evoluciona con un **algoritmo genético** los pesos de la evaluación que usa el **Minimax**. El *fitness* es el win-rate contra un **panel de rivales** (Aleatorio, Básica y Avanzada), lo que produce pesos más robustos que entrenar contra uno solo. Pide población, generaciones, batallas por evaluación y profundidad; guarda `data/genetic_gG_pP_dD.json`.
 
 ### Desde la GUI
 

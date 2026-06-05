@@ -807,7 +807,7 @@ El orden de los pesos corresponde siempre a: `[supervivencia, hp_diff, tipo, vel
 
 ### 10.2. Algoritmo Genético sobre Minimax
 
-La opción **5** de consola y el botón **ENTRENAR IA GENETICA** de la GUI evolucionan los 4 pesos que usa el **Minimax** en sus hojas. Cada *individuo* es un vector de 4 pesos; su *fitness* es la tasa de victorias de un `Minimax(d, pesos)` en `K` batallas contra la Heurística Básica. El ciclo combina **selección por torneo**, **cruce uniforme**, **mutación gaussiana** y **elitismo** durante `G` generaciones, y guarda el mejor resultado en `data/genetic_gG_pP_dD.json`. La explicación completa, paso a paso, está en [`docs/algoritmo_genetico.md`](algoritmo_genetico.md).
+La opción **5** de consola y el botón **ENTRENAR IA GENETICA** de la GUI evolucionan los 4 pesos que usa el **Minimax** en sus hojas. Cada *individuo* es un vector de 4 pesos; su *fitness* es la tasa de victorias de un `Minimax(d, pesos)` en `K` batallas contra un **panel de rivales** (Aleatorio, Básica y Avanzada por defecto), repartidos por igual entre las batallas. Usar un panel en vez de un solo rival reduce el sobreajuste y mejora la generalización (Experimento D del informe). El ciclo combina **selección por torneo**, **cruce uniforme**, **mutación gaussiana** y **elitismo** durante `G` generaciones, y guarda el mejor resultado en `data/genetic_gG_pP_dD.json`. La explicación completa, paso a paso, está en [`docs/algoritmo_genetico.md`](algoritmo_genetico.md).
 
 Desde la **GUI**, el entrenamiento corre en segundo plano con barra de progreso por batalla y una gráfica de fitness por generación, y puede cancelarse; al terminar, el nuevo agente queda seleccionable sin reiniciar.
 
