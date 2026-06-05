@@ -9,6 +9,7 @@ from ai.heuristic_basic import HeuristicBasicAgent
 from ai.heuristic_advanced import HeuristicAdvancedAgent
 from ai.heuristic_trained import HeuristicTrainedAgent, find_trained_weights
 from ai.minimax_agent import MinimaxAgent
+from ai.expectimax_agent import ExpectimaxAgent
 from ai.genetic_agent import GeneticAgent, load_genetic_agent
 from ai.genetic_trainer import find_genetic_weights
 from ai.heuristic_improved import HeuristicImprovedAgent, HeuristicImprovedTrainedAgent, find_improved_weights
@@ -20,6 +21,7 @@ _BASE: list[tuple[str, object]] = [
     ("Heuristica Mejorada", lambda: HeuristicImprovedAgent()),
     ("Minimax d=2",         lambda: MinimaxAgent(depth=2)),
     ("Minimax d=3",         lambda: MinimaxAgent(depth=3)),
+    ("Expectimax d=2",      lambda: ExpectimaxAgent(depth=2)),
 ]
 
 

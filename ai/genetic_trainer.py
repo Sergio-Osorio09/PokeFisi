@@ -33,31 +33,35 @@ def _random_individual() -> list[float]:
     return _normalize([random.random() for _ in range(_N_WEIGHTS)])
 
 
-def _make_scenarios(all_ids: list[int], n: int) -> list[tuple]:
-    """Genera n escenarios (equipo1, equipo2, semilla). Se comparten entre todos
-    los individuos de una generación (Common Random Numbers): así las diferencias
-    de fitness reflejan los pesos y no la suerte del emparejamiento."""
+def _make_scenarios(all_ids: list[int], n: int, n_opp: int = 1) -> list[tuple]:
+    """Genera n escenarios (equipo1, equipo2, semilla, idx_rival). Se comparten
+    entre todos los individuos de una generación (Common Random Numbers): así las
+    diferencias de fitness reflejan los pesos y no la suerte. Cuando hay varios
+    rivales, se reparten de forma cíclica entre los escenarios."""
     return [(random.sample(all_ids, 3),
              random.sample(all_ids, 3),
-             random.randrange(2 ** 31)) for _ in range(n)]
+             random.randrange(2 ** 31),
+             i % n_opp) for i in range(n)]
 
 
 def _evaluate(weights: list[float], all_moves: dict, depth: int,
-              scenarios: list[tuple], should_stop=None, battle_cb=None) -> float:
+              scenarios: list[tuple], opponents: list,
+              should_stop=None, battle_cb=None) -> float:
     """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) con estos pesos,
-    jugando exactamente los 'scenarios' dados (equipos y semilla fijos) vs
-    HeuristicaBasica. Reusar los mismos escenarios reduce la varianza del fitness.
+    jugando exactamente los 'scenarios' dados (equipos y semilla fijos) contra
+    el panel de 'opponents' (factories). Reusar los mismos escenarios reduce la
+    varianza; usar varios rivales reduce el sobreajuste a uno solo.
 
     should_stop : si devuelve True, corta entre batallas (cancelación granular).
     battle_cb   : se llama tras cada batalla jugada (para reportar progreso fino)."""
-    agent    = MinimaxAgent(depth=depth, weights=weights)
-    opponent = HeuristicBasicAgent()
-    wins     = 0
-    played   = 0
-    for ids1, ids2, seed in scenarios:
+    agent  = MinimaxAgent(depth=depth, weights=weights)
+    wins   = 0
+    played = 0
+    for ids1, ids2, seed, opp_idx in scenarios:
         if should_stop is not None and should_stop():
             break
         random.seed(seed)   # mismo emparejamiento y azar para todos los individuos
+        opponent = opponents[opp_idx]()
         state = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
         if Battle(state, agent, opponent).run() == 1:
             wins += 1
@@ -99,6 +103,7 @@ def run_genetic(pop_size: int = 12,
                 mutation_rate: float = 0.15,
                 mutation_strength: float = 0.10,
                 elite_k: int = 2,
+                opponent_factories=None,
                 callback=None,
                 should_stop=None,
                 progress_cb=None) -> dict:
@@ -137,6 +142,12 @@ def run_genetic(pop_size: int = 12,
     all_moves = load_moves()
     all_ids   = [p["id"] for p in load_all_pokemon()]
 
+    # Panel de rivales para el fitness. Por defecto solo HeuristicaBasica; pasar
+    # varias factories entrena contra un panel (reduce el sobreajuste a un rival).
+    if opponent_factories is None:
+        opponent_factories = [HeuristicBasicAgent]
+    n_opp = len(opponent_factories)
+
     # Inicialización: población aleatoria
     population = [_random_individual() for _ in range(pop_size)]
 
@@ -152,7 +163,7 @@ def run_genetic(pop_size: int = 12,
 
         # Escenarios compartidos por toda la generación (Common Random Numbers):
         # todos los individuos se miden con los mismos emparejamientos y azar.
-        scenarios = _make_scenarios(all_ids, battles_per_eval)
+        scenarios = _make_scenarios(all_ids, battles_per_eval, n_opp)
 
         # ── 1. Evaluación (con progreso y cancelación por batalla) ────────────
         fitnesses: list[float] = []
@@ -167,7 +178,7 @@ def run_genetic(pop_size: int = 12,
                     progress_cb(battles_done, total_battles, gen,
                                 generations, max(best_fitness, 0.0))
 
-            f = _evaluate(w, all_moves, minimax_depth, scenarios,
+            f = _evaluate(w, all_moves, minimax_depth, scenarios, opponent_factories,
                           should_stop=should_stop, battle_cb=_battle_cb)
             fitnesses.append(f)
 
