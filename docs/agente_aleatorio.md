@@ -56,13 +56,19 @@ El próximo turno vuelve a tirar el dado. No importa si Flamethrower funcionó o
 
 ## Código completo
 
+La decisión es una sola línea: `_possible_actions` devuelve la lista de acciones válidas y `random.choice` selecciona una uniformemente.
+
 ```python
 class RandomAgent(Agent):
     def choose_action(self, state, player_id):
-        return random.choice(self._possible_actions(state, player_id))
+        actions = self._possible_actions(state, player_id)
+        choice  = random.choice(actions)
+        # ... además rellena last_brain_data con barras uniformes (1/N)
+        #     para el panel cerebro de la GUI ...
+        return choice
 ```
 
-Toda la lógica cabe en una línea. `_possible_actions` devuelve la lista de acciones válidas y `random.choice` selecciona una uniformemente.
+El resto del método solo construye los datos del **panel cerebro** (todas las acciones con probabilidad `1/N` y la elegida marcada), de modo que en la GUI se vea claramente que el agente elige al azar. Esa información no influye en la decisión.
 
 ---
 
@@ -75,10 +81,12 @@ Un agente estratégico debería ganar cómodamente contra el aleatorio. En PokeF
 | Agente | Win-rate vs Aleatorio (esperado) |
 |---|---|
 | Aleatorio | ~50% |
-| Heurística Básica | ~65–70% |
-| Heurística Avanzada | ~70–80% |
-| Minimax d=2 | ~75–85% |
-| Minimax d=3 | ~80–90% |
+| Heurística Básica | ~65–75% |
+| Heurística Avanzada | ~75–85% |
+| Minimax d=2 | ~65–75% |
+| Minimax d=3 | ~70–80% |
+
+> Rangos orientativos. En los experimentos del informe ([`docs/informe/`](informe/)) el Minimax *paranoid* no siempre domina a las heurísticas, porque asume que el rival juega de forma óptima contra él y razona sobre un modelo de daño determinista; con profundidad mayor mejora.
 
 ### 2. Expone la varianza del juego
 
