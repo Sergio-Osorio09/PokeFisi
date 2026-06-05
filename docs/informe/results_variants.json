@@ -1,0 +1,68 @@
+{
+  "variants_search": {
+    "minimax": {
+      "Random": 63.3,
+      "Basica": 45.0,
+      "Avanzada": 38.3,
+      "GLOBAL": 48.9,
+      "CI": [
+        41.7,
+        56.1
+      ]
+    },
+    "expectimax": {
+      "Random": 65.0,
+      "Basica": 50.0,
+      "Avanzada": 38.3,
+      "GLOBAL": 51.1,
+      "CI": [
+        43.9,
+        58.3
+      ]
+    },
+    "expectimax_vs_minimax": 48.3,
+    "n": 60
+  },
+  "genetic_panel": {
+    "weights_single": [
+      0.059,
+      0.686,
+      0.111,
+      0.144
+    ],
+    "weights_multi": [
+      0.219,
+      0.713,
+      0.068,
+      0.0
+    ],
+    "single": {
+      "Random": 83.3,
+      "Basica": 61.7,
+      "Avanzada": 56.7,
+      "Minimax-d2": 46.7,
+      "GLOBAL": 62.1,
+      "CI": [
+        55.8,
+        68.0
+      ]
+    },
+    "multi": {
+      "Random": 78.3,
+      "Basica": 56.7,
+      "Avanzada": 50.0,
+      "Minimax-d2": 63.3,
+      "GLOBAL": 62.1,
+      "CI": [
+        55.8,
+        68.0
+      ]
+    },
+    "n": 60,
+    "train": {
+      "pop": 10,
+      "gens": 10,
+      "bpe": 15
+    }
+  }
+}

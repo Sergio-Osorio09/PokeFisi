@@ -199,6 +199,18 @@ configurable y regula el compromiso entre calidad y tiempo.
 \end{algorithmic}
 \end{algorithm}
 
+\paragraph{4b. Expectimax contra un modelo del rival.} La formulación
+\emph{paranoid} del minimax supone que el rival juega siempre para minimizar
+nuestra evaluación, lo que es pesimista contra oponentes que no actúan así y, en
+un juego \emph{simultáneo}, le concede al rival ver nuestra acción antes de
+responder. Como variante exploramos un \emph{expectimax contra un modelo}: en el
+nodo del rival, en lugar de minimizar sobre todas sus acciones, consultamos una
+política fija (por defecto la Heurística Básica) y descendemos por la acción que
+el rival \emph{realmente} elegiría, decidida sobre el estado \emph{antes} de ver
+la nuestra (acorde con la simultaneidad). Mantiene la evaluación y la simulación
+del minimax; al colapsar la rama del rival a una sola acción, además es más
+económico. Esta variante \emph{no} sustituye al minimax: es un agente adicional.
+
 \paragraph{5. Algoritmo genético sobre minimax.} Los pesos $\mathbf{w}$ de la
 ecuación~\eqref{eq:eval} determinan el comportamiento del minimax, pero
 ajustarlos a mano es subóptimo. Proponemos optimizarlos con un algoritmo
@@ -208,7 +220,10 @@ la tasa de victorias de un agente $\textsc{Minimax}(d,\mathbf{w})$ en $K$
 batallas contra la heurística básica. Para reducir la varianza del \emph{fitness}
 usamos \emph{Common Random Numbers}: todos los individuos de una generación se
 evalúan contra los \emph{mismos} emparejamientos y semillas, de modo que las
-diferencias de aptitud reflejan los pesos y no la suerte. El ciclo evolutivo
+diferencias de aptitud reflejan los pesos y no la suerte. El \emph{fitness} puede
+medirse contra un único rival o contra un \emph{panel} de rivales; esto último
+mitiga el sobreajuste (lo estudiamos en la Sección~\ref{sec:variantes}). El ciclo
+evolutivo
 (Algoritmo~\ref{alg:ga}) combina \emph{selección por torneo} ($k=3$),
 \emph{cruce uniforme}, \emph{mutación gaussiana} ($p_m=0.15$, $\sigma=0.10$) y
 \emph{elitismo} (los $e$ mejores individuos pasan intactos), de modo que la
@@ -385,6 +400,51 @@ población.}
 \label{fig:elite}
 \end{figure}
 
+\subsection{Experimento D: variantes de mejora}
+\label{sec:variantes}
+Motivados por las limitaciones detectadas (el pesimismo \emph{paranoid} y el
+sobreajuste del genético), evaluamos dos variantes. \textbf{(D1)} El
+\emph{expectimax} contra un modelo del rival frente al minimax \emph{paranoid} y
+a las heurísticas. \textbf{(D2)} El genético entrenando su \emph{fitness} contra
+\emph{un} rival (la Básica) frente a un \emph{panel} de rivales, midiendo cuán
+bien generaliza cada uno en un mini-torneo.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcccc}
+\toprule
+Agente & vs Rand & vs Bás & vs Avz & Global \\
+\midrule
+Minimax-$d2$ (paranoid)  & 63.3 & 45.0 & 38.3 & 48.9 \\
+Expectimax-$d2$ (modelo) & 65.0 & 50.0 & 38.3 & 51.1 \\
+\bottomrule
+\end{tabular}
+\caption{(D1) Win-rate (\%) de la búsqueda \emph{paranoid} frente al
+\emph{expectimax}-contra-modelo (60 batallas por rival). IC 95\% del global:
+Minimax $[41.7,56.1]$, Expectimax $[43.9,58.3]$ (se solapan). Enfrentamiento
+directo: $48.3\%$ a favor del Expectimax.}
+\label{tab:variants}
+\end{table}
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\toprule
+Fitness entrenado vs. & Rand & Bás & Avz & Mmx & Global \\
+\midrule
+1 rival (Básica)      & 83.3 & 61.7 & 56.7 & 46.7 & 62.1 \\
+Panel (R\,+\,B\,+\,A) & 78.3 & 56.7 & 50.0 & 63.3 & 62.1 \\
+\bottomrule
+\end{tabular}
+\caption{(D2) Generalización del genético según su \emph{fitness} de
+entrenamiento (60 batallas por rival). El entrenado contra un \emph{panel} rinde
+mucho mejor contra el rival \textbf{no visto} en entrenamiento (Minimax-$d2$:
+$63.3\%$ vs.\ $46.7\%$), a costa de algo de rendimiento contra los rivales en que
+el otro se especializó. IC 95\% del global: ambos $[55.8,68.0]$.}
+\label{tab:genpanel}
+\end{table}
+
 \section{Resultados y Discusión}
 
 \paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo}) sitúa al
@@ -436,6 +496,20 @@ construcción ---se conserva siempre la mejor solución---, así que el efecto r
 del elitismo está en preservar buenos individuos \emph{en la población};
 cuantificarlo con nitidez exigiría poblaciones y generaciones mayores.
 
+\paragraph{Variantes de mejora (Experimento~D).} Las dos variantes confirman el
+diagnóstico. \textbf{(D1)} El \emph{expectimax}-contra-modelo
+(Tabla~\ref{tab:variants}) mejora ligeramente al minimax \emph{paranoid}
+($51.1\%$ vs.\ $48.9\%$), y en particular contra la Básica ---el rival que
+modela--- ($50\%$ vs.\ $45\%$); pero la ganancia global no es significativa (los
+intervalos se solapan), porque el modelo fijo no acierta cuando el rival real
+difiere. \textbf{(D2)} El efecto más claro está en el genético
+(Tabla~\ref{tab:genpanel}): entrenar el \emph{fitness} contra un \emph{panel} de
+rivales produce un agente que \textbf{generaliza mucho mejor al oponente no visto}
+(Minimax-$d2$: $63.3\%$ frente a $46.7\%$ del entrenado contra un solo rival),
+a cambio de algo de rendimiento contra los rivales en que el otro se
+sobreespecializó. Es la evidencia directa de que el sobreajuste observado se
+mitiga diversificando la señal de aptitud.
+
 \paragraph{Amenazas a la validez.} Pese a usar $80$ batallas por par e intervalos
 de confianza, los márgenes siguen siendo de $\pm 5$ puntos, y el daño de
 simulación es un \emph{proxy} determinista del combate real estocástico. La
@@ -462,14 +536,17 @@ profundidades mayores. El algoritmo genético optimizó con éxito su aptitud, p
 \emph{sobreajustó} a su único rival de entrenamiento y no generalizó al resto del
 torneo ---un recordatorio de la importancia de diseñar bien la función de
 aptitud. El efecto del elitismo, por su parte, no fue concluyente a la escala
-estudiada.
+estudiada. Las dos variantes del Experimento~D respaldan el diagnóstico: un
+\emph{expectimax} que modela al rival mejora levemente al minimax \emph{paranoid}
+(sin significancia), y, sobre todo, entrenar el \emph{fitness} contra un panel de
+rivales hace que el genético \emph{generalice} mucho mejor a oponentes no vistos.
 
-Como trabajo futuro proponemos: evaluar el \emph{fitness} del genético contra un
-panel de rivales o mediante auto-juego (para evitar el sobreajuste observado);
-sustituir la formulación \emph{paranoid} por una que capture la simultaneidad
-(p.\,ej.\ equilibrios de estrategia mixta) sin renunciar a la poda alfa-beta;
-ampliar los tamaños de muestra para estrechar los intervalos de confianza; y
-enriquecer el modelo con estados de alteración y mayor estocasticidad.
+Como trabajo futuro proponemos profundizar estas variantes: resolver los nodos
+como juegos de matriz con equilibrios de estrategia \emph{mixta} (en lugar del
+modelo de rival fijo del expectimax); usar \emph{auto-juego} coevolutivo para el
+genético; ampliar los tamaños de muestra para estrechar los intervalos de
+confianza; y enriquecer el modelo con estados de alteración y mayor
+estocasticidad.
 
 % acl.sty ya define \bibliographystyle{acl_natbib}, no hay que repetirlo.
 \bibliography{custom}
