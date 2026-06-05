@@ -92,6 +92,7 @@ Agentes disponibles:
 - **Heurística Avanzada**: evalúa **4 diferenciales** ponderados (supervivencia, HP, tipo, velocidad).
 - **Heurística Mejorada**: evalúa **6 componentes** (supervivencia, HP ponderado, amenaza de KO, peligro de KO, cobertura de tipos y velocidad).
 - **Minimax `d=2` / `d=3`**: búsqueda adversaria con poda alfa-beta que anticipa la respuesta del rival hasta `d` turnos.
+- **Expectimax `d=2`**: variante que modela al rival (por defecto la Básica) en vez de asumir el peor caso; capta mejor la simultaneidad.
 - **Genético**: el Minimax con los pesos de su evaluación optimizados por un algoritmo genético.
 - **HeuristicaAvanzada-N / H.Mejorada-N / Genetico g…**: agentes entrenados; aparecen solo si previamente los generaste.
 
@@ -621,6 +622,12 @@ def _minimax(self, state, depth, alpha, beta, player_id, opp_id, my_action):
 ```
 
 La **poda alfa-beta** descarta ramas que no pueden mejorar la decisión, conservando exactamente el mismo resultado que el minimax puro pero explorando muchos menos nodos (en los experimentos del informe, una reducción del 50 % a profundidad 2 y del 82 % a profundidad 3). La profundidad `d` (en turnos) es configurable: `Minimax d=2` y `Minimax d=3` ofrecen distintos equilibrios entre previsión y coste.
+
+---
+
+### Agente 4b — Expectimax contra modelo (`ai/expectimax_agent.py`)
+
+Variante de búsqueda que **no asume el peor caso**. En lugar de minimizar sobre todas las acciones del rival (paranoid), consulta una **política fija** que modela al oponente (por defecto la Heurística Básica) y desciende por la jugada que el rival *realmente* haría, decidida sobre el estado **antes** de ver la nuestra (acorde con la simultaneidad del combate). Reutiliza la evaluación, la simulación de turno y el panel cerebro del Minimax; al colapsar la rama del rival a una sola acción, es más económico. Es un agente **adicional**: no reemplaza al Minimax.
 
 ---
 

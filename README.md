@@ -202,6 +202,7 @@ Al seleccionar una IA, la consola muestra la descripción de cada agente disponi
 | **Heurística Avanzada** | Evalúa **4 diferenciales** ponderados (todos en `[-1, 1]`): supervivencia, HP promedio, ventaja de tipo y velocidad. Pesos por defecto `[0.40, 0.35, 0.15, 0.10]`; un estado simétrico vale 0. |
 | **Heurística Mejorada** | Evalúa **6 componentes**: supervivencia, HP ponderado, amenaza de KO, peligro de ser noqueado, cobertura de tipos del equipo y velocidad. |
 | **Minimax `d=2` / `d=3`** | Búsqueda adversaria con **poda alfa-beta**. Anticipa la respuesta del rival hasta `d` turnos usando la evaluación de 4 diferenciales en las hojas. Mayor profundidad = más previsión y más coste. |
+| **Expectimax `d=2`** | Variante de búsqueda que en vez de asumir el peor caso **modela al rival** con una política (por defecto la Heurística Básica) y desciende por la jugada que el rival realmente haría. Captura mejor la simultaneidad y evita el pesimismo del minimax. |
 | **Genético** | El **mismo Minimax**, pero con los pesos de su evaluación **optimizados por un algoritmo genético**. Aparece como `Genetico g=… p=… d=…` tras entrenarlo. |
 | **HeuristicaAvanzada-N / H.Mejorada-N** | Versiones de las heurísticas con pesos ajustados automáticamente (N batallas) mediante *hill-climbing*. Aparecen en el selector solo si previamente las entrenaste. |
 
@@ -260,6 +261,7 @@ PokeFisi/
 │   ├── heuristic_improved.py  # Heurística Mejorada (6 componentes)
 │   ├── heuristic_trained.py   # Carga pesos de heurísticas entrenadas
 │   ├── minimax_agent.py       # Minimax con poda alfa-beta
+│   ├── expectimax_agent.py    # Expectimax: minimax que modela al rival
 │   ├── genetic_agent.py       # Genético = Minimax con pesos evolucionados
 │   ├── genetic_trainer.py     # Algoritmo genético sobre minimax
 │   ├── trainer.py        # Entrenamiento hill-climbing de las heurísticas

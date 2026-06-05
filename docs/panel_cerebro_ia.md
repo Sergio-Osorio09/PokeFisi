@@ -172,6 +172,7 @@ self.last_brain_data = {
 | Heurística Avanzada | Sí — fórmula + barras + desglose de componentes |
 | Heurística Mejorada | Sí — fórmula + barras + desglose de componentes |
 | Minimax | Sí — valor por acción + nodos, podas alfa-beta y variante principal |
+| Expectimax | Sí — valor por acción + nodos y la jugada predicha del rival |
 | Genético | Hereda Minimax — Sí, y añade los pesos aprendidos |
 
 Todos los agentes rellenan `self.last_brain_data` en `choose_action`, de modo que el panel funciona con cualquiera de ellos.
