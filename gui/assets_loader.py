@@ -6,15 +6,11 @@ from config import TYPE_COLORS
 _cache: dict = {}
 
 
-def get_font(size: int) -> pygame.font.Font:
-    key = f"font_{size}"
-    if key not in _cache:
-        font_path = "assets/fonts/pokemon_font.ttf"
-        if os.path.exists(font_path):
-            _cache[key] = pygame.font.Font(font_path, size)
-        else:
-            _cache[key] = pygame.font.SysFont("monospace", size, bold=True)
-    return _cache[key]
+def get_font(size: int, weight: str = "medium") -> pygame.font.Font:
+    """Fuente del tema (Poppins). Delega en gui.theme para mantener una sola
+    tipografía coherente en toda la interfaz."""
+    from gui import theme
+    return theme.font(size, weight)
 
 
 def get_pokemon_image(image_path: str, size: tuple = (80, 80)) -> pygame.Surface:

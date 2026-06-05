@@ -29,3 +29,5 @@ assets/fonts/*
 !assets/images/backgrounds/.gitkeep
 !assets/images/ui/.gitkeep
 !assets/fonts/.gitkeep
+!assets/fonts/*.ttf
+!assets/fonts/OFL.txt
