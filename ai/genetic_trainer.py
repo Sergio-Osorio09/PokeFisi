@@ -33,11 +33,20 @@ def _random_individual() -> list[float]:
     return _normalize([random.random() for _ in range(_N_WEIGHTS)])
 
 
-def _evaluate(weights: list[float], all_moves: dict,
-              all_ids: list[int], battles: int, depth: int,
-              should_stop=None, battle_cb=None) -> float:
-    """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) que usa estos
-    pesos en su función de evaluación, jugando 'battles' batallas vs HeuristicaBasica.
+def _make_scenarios(all_ids: list[int], n: int) -> list[tuple]:
+    """Genera n escenarios (equipo1, equipo2, semilla). Se comparten entre todos
+    los individuos de una generación (Common Random Numbers): así las diferencias
+    de fitness reflejan los pesos y no la suerte del emparejamiento."""
+    return [(random.sample(all_ids, 3),
+             random.sample(all_ids, 3),
+             random.randrange(2 ** 31)) for _ in range(n)]
+
+
+def _evaluate(weights: list[float], all_moves: dict, depth: int,
+              scenarios: list[tuple], should_stop=None, battle_cb=None) -> float:
+    """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) con estos pesos,
+    jugando exactamente los 'scenarios' dados (equipos y semilla fijos) vs
+    HeuristicaBasica. Reusar los mismos escenarios reduce la varianza del fitness.
 
     should_stop : si devuelve True, corta entre batallas (cancelación granular).
     battle_cb   : se llama tras cada batalla jugada (para reportar progreso fino)."""
@@ -45,11 +54,10 @@ def _evaluate(weights: list[float], all_moves: dict,
     opponent = HeuristicBasicAgent()
     wins     = 0
     played   = 0
-    for _ in range(battles):
+    for ids1, ids2, seed in scenarios:
         if should_stop is not None and should_stop():
             break
-        ids1  = random.sample(all_ids, 3)
-        ids2  = random.sample(all_ids, 3)
+        random.seed(seed)   # mismo emparejamiento y azar para todos los individuos
         state = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
         if Battle(state, agent, opponent).run() == 1:
             wins += 1
@@ -86,7 +94,7 @@ def _mutate(individual: list[float], rate: float, strength: float) -> list[float
 
 def run_genetic(pop_size: int = 12,
                 generations: int = 15,
-                battles_per_eval: int = 6,
+                battles_per_eval: int = 20,
                 minimax_depth: int = 2,
                 mutation_rate: float = 0.15,
                 mutation_strength: float = 0.10,
@@ -106,7 +114,9 @@ def run_genetic(pop_size: int = 12,
     ----------
     pop_size          : número de individuos por generación
     generations       : número de generaciones a evolucionar
-    battles_per_eval  : batallas que juega cada individuo para medir su fitness
+    battles_per_eval  : batallas que juega cada individuo para medir su fitness.
+                        Más batallas = fitness menos ruidoso; se usan los mismos
+                        escenarios para todos los individuos de la generación (CRN)
     minimax_depth     : profundidad del MinimaxAgent usado para evaluar cada individuo
     mutation_rate     : probabilidad de mutar cada gen  [0, 1]
     mutation_strength : desviación estándar de la mutación gaussiana
@@ -140,6 +150,10 @@ def run_genetic(pop_size: int = 12,
 
     for gen in range(1, generations + 1):
 
+        # Escenarios compartidos por toda la generación (Common Random Numbers):
+        # todos los individuos se miden con los mismos emparejamientos y azar.
+        scenarios = _make_scenarios(all_ids, battles_per_eval)
+
         # ── 1. Evaluación (con progreso y cancelación por batalla) ────────────
         fitnesses: list[float] = []
         for w in population:
@@ -153,7 +167,7 @@ def run_genetic(pop_size: int = 12,
                     progress_cb(battles_done, total_battles, gen,
                                 generations, max(best_fitness, 0.0))
 
-            f = _evaluate(w, all_moves, all_ids, battles_per_eval, minimax_depth,
+            f = _evaluate(w, all_moves, minimax_depth, scenarios,
                           should_stop=should_stop, battle_cb=_battle_cb)
             fitnesses.append(f)
 

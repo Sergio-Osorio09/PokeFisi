@@ -201,10 +201,10 @@ def _genetic_flow():
     print("  El AG evoluciona los pesos de un Minimax (poda alfa-beta).")
     print("  Minimax es costoso: valores altos pueden tardar varios minutos.\n")
 
-    pop_size  = ask_int("Tamaño de poblacion (min. 4)",     12, 4)
-    gens      = ask_int("Numero de generaciones (min. 5)",  15, 5)
-    battles   = ask_int("Batallas por evaluacion (min. 5)",  6, 5)
-    depth     = ask_int("Profundidad del Minimax (2 o 3)",   2, 2)
+    pop_size  = ask_int("Tamaño de poblacion (min. 4)",      12, 4)
+    gens      = ask_int("Numero de generaciones (min. 5)",   15, 5)
+    battles   = ask_int("Batallas por evaluacion (min. 10)", 20, 10)
+    depth     = ask_int("Profundidad del Minimax (2 o 3)",    2, 2)
 
     labels = ["supervivencia", "hp_diff", "tipo", "velocidad"]
     total_evals = pop_size * gens

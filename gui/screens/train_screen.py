@@ -22,7 +22,7 @@ _LABELS = ["supervivencia", "hp_diff", "tipo", "velocidad"]
 # Opciones configurables (valor mostrado en el selector < valor >)
 _POP_OPTS    = [8, 12, 16, 20]
 _GEN_OPTS    = [10, 15, 20, 30]
-_BATTLE_OPTS = [4, 6, 8, 10]
+_BATTLE_OPTS = [10, 20, 30, 50]
 _DEPTH_OPTS  = [2, 3]
 
 # Estimacion grosera de tiempo por batalla de minimax (ms), por profundidad.
@@ -257,7 +257,7 @@ class TrainScreen:
         big = self.font_big.render(f"{best_global:.0%}", True, (120, 230, 150))
         surface.blit(big, big.get_rect(centerx=cx, top=210))
         flbl = self.font_info.render(
-            f"mejor individuo (sobre {bpe} batallas; satura rapido)", True, (180, 200, 180))
+            f"mejor individuo (sobre {bpe} batallas, escenarios comunes)", True, (180, 200, 180))
         surface.blit(flbl, flbl.get_rect(centerx=cx, top=266))
         albl = self.font_info.render(
             f"promedio poblacion (senal real): {avg:.0%}", True, (200, 200, 150))

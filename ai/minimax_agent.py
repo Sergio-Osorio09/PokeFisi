@@ -1,4 +1,3 @@
-import random
 import time
 from ai.base_agent import Agent
 from engine.state import BattleState
@@ -216,7 +215,11 @@ class MinimaxAgent(Agent):
         me  = state.get_active(player_id)
         opp = state.get_active(opp_id)
 
-        me_first = me.speed > opp.speed or (me.speed == opp.speed and random.random() < 0.5)
+        # Determinista dentro de la búsqueda: en empate de velocidad asumimos el
+        # peor caso (el rival actúa primero). Evita azar en el minimax, que debe
+        # dar siempre el mismo valor para el mismo estado. El azar real del
+        # desempate ocurre en la batalla (engine/battle.py), no en el razonamiento.
+        me_first = me.speed > opp.speed
         if me_first:
             self._apply_action(state, player_id, my_action)
             if not state.is_terminal():
