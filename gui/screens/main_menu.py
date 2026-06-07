@@ -1,67 +1,64 @@
 import pygame
-from config import WHITE, WINDOW_WIDTH, WINDOW_HEIGHT
-from gui import theme
+from config import WINDOW_WIDTH, WINDOW_HEIGHT
+from gui import comic
 from gui.components.button import Button
-
-
-def _draw_pokeball(surface, cx, cy, r):
-    """Dibuja un pokeball minimalista centrado en (cx, cy)."""
-    band_h = max(4, int(r * 0.20))
-    # base blanca (mitad inferior)
-    pygame.draw.circle(surface, (236, 239, 246), (cx, cy), r)
-    # mitad superior roja (recortando con clip)
-    prev = surface.get_clip()
-    surface.set_clip(pygame.Rect(cx - r, cy - r, 2 * r, r))
-    pygame.draw.circle(surface, theme.DANGER, (cx, cy), r)
-    surface.set_clip(prev)
-    # banda central
-    pygame.draw.rect(surface, (24, 26, 38), (cx - r, cy - band_h // 2, 2 * r, band_h))
-    # contorno
-    pygame.draw.circle(surface, (24, 26, 38), (cx, cy), r, 3)
-    # botón central
-    pygame.draw.circle(surface, (24, 26, 38), (cx, cy), int(r * 0.30))
-    pygame.draw.circle(surface, (236, 239, 246), (cx, cy), int(r * 0.20))
-    pygame.draw.circle(surface, (24, 26, 38), (cx, cy), int(r * 0.20), 2)
 
 
 class MainMenu:
     def __init__(self):
         cx = WINDOW_WIDTH // 2
-        bw, bh = 330, 56
+        bw, bh = 360, 58
         x = cx - bw // 2
-        self.btn_battle = Button((x, 352, bw, bh), "NUEVA BATALLA",
-                                 font_size=22, color=theme.SUCCESS, hover_color=theme.SUCCESS_HOVER)
-        self.btn_train  = Button((x, 422, bw, bh), "ENTRENAR IA GENÉTICA",
-                                 font_size=20, color=theme.PRIMARY, hover_color=theme.PRIMARY_HOVER)
-        self.btn_delete = Button((x, 492, bw, bh), "ELIMINAR IAS ENTRENADAS",
-                                 font_size=18, color=theme.SURFACE_LIGHT, hover_color=theme.BORDER,
-                                 text_color=theme.TEXT_MUTED)
-        self.btn_exit   = Button((x, 562, bw, bh), "SALIR",
-                                 font_size=22, color=theme.DANGER, hover_color=theme.DANGER_HOVER)
+        self.btn_battle = Button((x, 372, bw, bh), "NUEVA BATALLA",
+                                 font_size=23, color=comic.GREEN, hover_color=comic.GREEN_HOVER,
+                                 style="comic")
+        self.btn_train  = Button((x, 442, bw, bh), "ENTRENAR IA GENÉTICA",
+                                 font_size=20, color=comic.BLUE, hover_color=comic.BLUE_HOVER,
+                                 style="comic")
+        self.btn_delete = Button((x, 512, bw, bh), "ELIMINAR IAS ENTRENADAS",
+                                 font_size=18, color=comic.SLATE, hover_color=comic.SLATE_HOVER,
+                                 style="comic")
+        self.btn_exit   = Button((x, 582, bw, bh), "SALIR",
+                                 font_size=23, color=comic.RED, hover_color=comic.RED_HOVER,
+                                 style="comic")
 
     def update(self, dt: int = 0):
         pass
 
     def draw(self, surface: pygame.Surface):
-        theme.background(surface)
+        comic.battle_background(surface)
         cx = WINDOW_WIDTH // 2
 
-        _draw_pokeball(surface, cx, 150, 48)
+        # Emblema: estallido + pokébola
+        comic.star_burst(surface, cx, 132, 92, 58, 16, comic.SUN1, comic.INK, ow=4)
+        comic.star_burst(surface, cx, 132, 78, 50, 16, comic.PAPER, comic.INK, ow=3)
+        comic.pokeball(surface, cx, 132, 44)
 
-        theme.text(surface, "PokeFisi", 60, (cx, 250), color=WHITE,
-                   weight="bold", center=True)
-        theme.text(surface, "Simulador de combates con Inteligencia Artificial",
-                   18, (cx, 300), color=theme.TEXT_MUTED, weight="regular", center=True)
+        # Chispas decorativas
+        comic.star_burst(surface, 150, 120, 22, 10, 5, comic.SUN1, comic.INK, ow=3)
+        comic.star_burst(surface, WINDOW_WIDTH - 150, 96, 16, 7, 5, comic.PAPER, comic.INK, ow=2)
+        comic.star_burst(surface, WINDOW_WIDTH - 96, 200, 12, 5, 4, comic.SUN1, comic.INK, ow=2)
+
+        # Título tipo sticker
+        comic.outlined_text(surface, "PokeFisi", 76, (cx, 250),
+                            fill=comic.SUN1, outline=comic.INK, ow=5,
+                            weight="bold", shadow=comic.RED, rotate=-3)
+
+        # Subtítulo en banda
+        comic.ribbon(surface, (cx, 320),
+                     "Simulador de combates con I.A.", size=18,
+                     fill=comic.BLUE, text_col=comic.PAPER)
 
         self.btn_battle.draw(surface)
         self.btn_train.draw(surface)
         self.btn_delete.draw(surface)
         self.btn_exit.draw(surface)
 
-        theme.text(surface,
-                   "Agentes: Aleatorio · Heurísticas · Minimax (alfa-beta) · Expectimax · Genético",
-                   13, (cx, WINDOW_HEIGHT - 30), color=theme.TEXT_DIM,
-                   weight="regular", center=True)
+        comic.outlined_text(
+            surface,
+            "Agentes: Aleatorio · Heurísticas · Minimax · Expectimax · Genético",
+            13, (cx, WINDOW_HEIGHT - 26), fill=comic.PAPER, outline=comic.INK,
+            ow=2, weight="semibold")
 
     def handle_event(self, event: pygame.event.Event):
         if self.btn_battle.handle_event(event):
