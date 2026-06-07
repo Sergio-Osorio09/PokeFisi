@@ -224,7 +224,7 @@ def run_genetic(pop_size: int = 12,
                 battles_done += 1
                 if progress_cb is not None:
                     progress_cb(battles_done, total_battles, gen,
-                                generations, max(best_winrate, 0.0))
+                                generations, max(best_score, 0.0))
 
             wr, score = _evaluate(w, all_moves, eval_depth, scenarios,
                                   opponent_factories,
@@ -242,21 +242,23 @@ def run_genetic(pop_size: int = 12,
         if not scores:
             break   # cancelado antes de evaluar nada en esta generación
 
-        actual_gens = gen
-        gen_best_wr = max(winrates)
-        avg_wr      = sum(winrates) / len(winrates)
+        actual_gens   = gen
+        gen_best_cont = max(scores)
+        avg_cont      = sum(scores) / len(scores)
 
         history.append({
             "gen":          gen,
-            "best_gen":     round(gen_best_wr, 4),
-            "best_global":  round(best_winrate, 4),
-            "avg":          round(avg_wr, 4),
+            "best_gen":     round(gen_best_cont, 4),   # fitness continuo de la gen
+            "best_global":  round(best_score, 4),      # fitness continuo (sube en la gráfica)
+            "avg":          round(avg_cont, 4),
+            "win_rate":     round(best_winrate, 4),    # win-rate del mejor (referencia)
             "best_weights": best_weights[:],
         })
 
         if callback:
-            callback(gen, generations, gen_best_wr, best_winrate,
-                     avg_wr, population[:])
+            # La gráfica muestra el fitness CONTINUO (sube suave cada generación).
+            callback(gen, generations, gen_best_cont, best_score,
+                     avg_cont, population[:])
 
         # Cancelado a media generación o señal de parada: terminar aquí.
         if len(scores) < pop_size or (should_stop is not None and should_stop()):
@@ -283,8 +285,8 @@ def run_genetic(pop_size: int = 12,
 
     return {
         "weights":           best_weights,
-        "fitness":           best_winrate,        # win-rate (titular, intuitivo)
-        "fitness_continuo":  round(best_score, 4),
+        "fitness":           round(best_score, 4),    # fitness continuo (lo que sube en la gráfica)
+        "win_rate":          round(best_winrate, 4),  # win-rate del mejor (referencia)
         "generations":       actual_gens or generations,
         "pop_size":          pop_size,
         "battles_per_eval":  battles_per_eval,

@@ -330,11 +330,15 @@ class TrainScreen:
         comic.title(surface, title_txt, (cx, 76), size=30)
 
         fit = data.get("fitness", 0.0) if data else 0.0
+        wr  = data.get("win_rate", None) if data else None
         big = self.font_big.render(f"{fit:.0%}", True, (120, 230, 150))
         surface.blit(big, big.get_rect(centerx=cx, top=110))
-        flbl = self.font_info.render("fitness final (win-rate vs panel: Random/Basica/Avanzada)",
+        flbl = self.font_info.render("fitness final (margen continuo vs panel: Random/Basica/Avanzada)",
                                      True, (180, 200, 180))
-        surface.blit(flbl, flbl.get_rect(centerx=cx, top=168))
+        surface.blit(flbl, flbl.get_rect(centerx=cx, top=166))
+        if wr is not None:
+            wlbl = self.font_info.render(f"win-rate real del mejor: {wr:.0%}", True, (210, 205, 150))
+            surface.blit(wlbl, wlbl.get_rect(centerx=cx, top=186))
 
         # Pesos evolucionados vs base
         weights = data.get("weights", []) if data else []
