@@ -14,9 +14,14 @@ INK         = (24, 20, 34)        # "negro" de contornos (casi negro, cálido)
 PAPER       = (255, 255, 255)
 
 SKY         = (58, 132, 240)      # azul vibrante
-SKY_DEEP    = (30, 52, 130)       # azul profundo (base inferior)
-SUN1        = (255, 226, 92)      # amarillo brillante (rayos)
-SUN2        = (255, 198, 48)      # dorado (rayos alternos)
+SUN1        = (255, 226, 92)      # dorado/acento (título, estrellas) — NO el fondo
+SUN2        = (255, 198, 48)
+
+# Colores del FONDO (independientes del acento dorado del título)
+RAY1        = (94, 198, 255)      # rayo claro del sunburst
+RAY2        = (44, 150, 242)      # rayo alterno
+SKY_DEEP    = (22, 52, 120)       # base detrás de los rayos
+FIELD_BLUE  = (18, 42, 110)       # mitad inferior (zona de botones)
 
 RED         = (235, 64, 68)
 RED_HOVER   = (255, 99, 103)
@@ -50,7 +55,7 @@ def battle_background(surface: pygame.Surface, cx_ratio: float = 0.5,
         for i in range(n):
             a0 = 2 * math.pi * i / n
             a1 = 2 * math.pi * (i + 1) / n
-            col = SUN1 if i % 2 == 0 else SUN2
+            col = RAY1 if i % 2 == 0 else RAY2
             pygame.draw.polygon(bg, col, [
                 (cx, cy),
                 (cx + R * math.cos(a0), cy + R * math.sin(a0)),
@@ -62,7 +67,7 @@ def battle_background(surface: pygame.Surface, cx_ratio: float = 0.5,
         for y in range(h):
             t = y / max(1, h - 1)
             a = 0 if t < 0.30 else min(255, int(255 * (t - 0.30) / 0.24))
-            shade.fill((26, 46, 132, a), (0, y, w, 1))
+            shade.fill((*FIELD_BLUE, a), (0, y, w, 1))
         bg.blit(shade, (0, 0))
         # Líneas de velocidad diagonales sutiles sobre el azul (energía cómic)
         speed = pygame.Surface(size, pygame.SRCALPHA)
