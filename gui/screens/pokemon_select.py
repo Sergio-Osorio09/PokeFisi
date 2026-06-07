@@ -4,6 +4,7 @@ from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
 from gui.components.button import Button
 from gui.components.pokemon_card import PokemonCard
+from gui import comic
 from engine.loader import load_all_pokemon
 
 # ── Constantes de layout ─────────────────────────────────────────────────────
@@ -89,7 +90,7 @@ class PokemonSelect:
 
     # ── Dibujo ───────────────────────────────────────────────────────────────
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
+        comic.sub_background(surface)
 
         self._draw_header(surface)
         self._draw_grid(surface)
@@ -106,8 +107,7 @@ class PokemonSelect:
 
     def _draw_header(self, surface: pygame.Surface):
         # Título
-        title = self.font_title.render(self._title(), True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=WINDOW_WIDTH // 2, top=8))
+        comic.title(surface, self._title(), (WINDOW_WIDTH // 2, 26), size=26, rotate=0)
 
         # Contador
         count = len(self._current_team())

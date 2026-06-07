@@ -6,7 +6,7 @@ from gui import theme
 class Button:
     def __init__(self, rect: tuple, text: str, font_size: int = 22,
                  color=theme.PRIMARY, hover_color=theme.PRIMARY_HOVER,
-                 text_color=WHITE, border_radius: int = 12, style: str = "soft"):
+                 text_color=WHITE, border_radius: int = 12, style: str = "comic"):
         self.rect = pygame.Rect(rect)
         self.text = text
         self.color = color

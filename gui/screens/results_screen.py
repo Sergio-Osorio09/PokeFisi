@@ -2,6 +2,7 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font
 from gui.components.button import Button
+from gui import comic
 
 
 class ResultsScreen:
@@ -21,22 +22,22 @@ class ResultsScreen:
                                   font_size=22, color=(40,100,40), hover_color=(60,150,60))
 
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
+        comic.sub_background(surface)
 
         if self.winner == 1:
             winner_name  = self.label1
-            winner_color = (120, 255, 120)
+            winner_color = (140, 255, 140)
         elif self.winner == 2:
             winner_name  = self.label2
-            winner_color = (180, 200, 255)
+            winner_color = (170, 205, 255)
         else:
             winner_name  = None
             winner_color = WHITE
 
-        title = self.font_big.render(
-            f"¡{winner_name} gana!" if winner_name else "¡Empate!",
-            True, winner_color)
-        surface.blit(title, title.get_rect(centerx=WINDOW_WIDTH // 2, top=150))
+        comic.outlined_text(
+            surface, f"¡{winner_name} gana!" if winner_name else "¡Empate!",
+            52, (WINDOW_WIDTH // 2, 178), fill=winner_color, outline=comic.INK,
+            ow=4, weight="bold", shadow=comic.RED, rotate=-2)
 
         turn_lbl = self.font_mid.render(
             f"Turnos jugados: {self.state.turn_number}", True, WHITE)

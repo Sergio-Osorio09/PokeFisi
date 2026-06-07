@@ -4,6 +4,7 @@ from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT, AI_TURN_DELAY
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
 from gui.components.battle_log import BattleLog
 from gui.components.button import Button
+from gui import comic
 from engine.state import BattleState
 from engine.battle import Battle
 
@@ -96,18 +97,21 @@ class MoveButton:
 
     def draw(self, surface):
         base  = get_type_color(self.move.type)
-        dark  = tuple(max(0, c - 60) for c in base)
+        dark  = tuple(max(0, c - 50) for c in base)
         light = tuple(min(255, c + 25) for c in base)
-        pygame.draw.rect(surface, light if self._hov else dark, self.rect)
-        pygame.draw.rect(surface, WHITE, self.rect, 2)
+        r = self.rect
+        pygame.draw.rect(surface, comic.INK, r.move(4, 5), border_radius=8)
+        pygame.draw.rect(surface, light if self._hov else dark, r, border_radius=8)
+        pygame.draw.rect(surface, comic.INK, r, 3, border_radius=8)
         badge_w = 55
-        badge = pygame.Rect(self.rect.right - badge_w - 6, self.rect.y + 6, badge_w, 16)
-        pygame.draw.rect(surface, tuple(min(255, c + 40) for c in base), badge)
+        badge = pygame.Rect(r.right - badge_w - 8, r.y + 6, badge_w, 16)
+        pygame.draw.rect(surface, tuple(min(255, c + 40) for c in base), badge, border_radius=5)
+        pygame.draw.rect(surface, comic.INK, badge, 2, border_radius=5)
         bt = get_font(11).render(self.move.type, True, WHITE)
         surface.blit(bt, bt.get_rect(center=badge.center))
-        surface.blit(self.fn.render(self.move.name, True, WHITE), (self.rect.x + 8, self.rect.y + 6))
+        surface.blit(self.fn.render(self.move.name, True, WHITE), (r.x + 10, r.y + 6))
         surface.blit(self.fs.render(f"BP {self.move.base_power}   Acc {self.move.accuracy}%",
-                     True, (200, 200, 180)), (self.rect.x + 8, self.rect.y + 28))
+                     True, (235, 235, 215)), (r.x + 10, r.y + 28))
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -125,10 +129,12 @@ class SwitchButton:
         self.font = get_font(17)
 
     def draw(self, surface):
-        pygame.draw.rect(surface, (90, 65, 145) if self._hov else (55, 40, 105), self.rect)
-        pygame.draw.rect(surface, WHITE, self.rect, 2)
-        surface.blit(self.font.render("CAMBIAR POKEMON", True, WHITE),
-                     self.font.render("CAMBIAR POKEMON", True, WHITE).get_rect(center=self.rect.center))
+        r = self.rect
+        pygame.draw.rect(surface, comic.INK, r.move(4, 5), border_radius=8)
+        pygame.draw.rect(surface, (110, 80, 175) if self._hov else (70, 50, 130), r, border_radius=8)
+        pygame.draw.rect(surface, comic.INK, r, 3, border_radius=8)
+        comic.outlined_text(surface, "CAMBIAR POKEMON", 17, r.center,
+                            fill=WHITE, outline=comic.INK, ow=2, weight="bold")
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
@@ -246,8 +252,8 @@ class BattleScreen:
 
     # ── draw ──────────────────────────────────────────────────────────────────
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
-        pygame.draw.line(surface, (60, 60, 90), (0, FIELD_H), (WINDOW_WIDTH, FIELD_H), 2)
+        comic.sub_background(surface)
+        pygame.draw.line(surface, comic.INK, (0, FIELD_H), (WINDOW_WIDTH, FIELD_H), 3)
         surface.fill((12, 12, 25), (0, FIELD_H + 2, WINDOW_WIDTH, WINDOW_HEIGHT - FIELD_H - 2))
 
         p2 = self.state.active_pokemon_p2

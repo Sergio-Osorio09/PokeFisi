@@ -10,6 +10,7 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font
 from gui.components.button import Button
+from gui import comic
 
 
 def _gather_trained() -> list[tuple]:
@@ -82,11 +83,10 @@ class DeleteScreen:
         pass
 
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
+        comic.sub_background(surface)
         cx = WINDOW_WIDTH // 2
 
-        title = self.font_title.render("Eliminar IAs entrenadas", True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=cx, top=50))
+        comic.title(surface, "Eliminar IAs entrenadas", (cx, 72), size=34)
 
         if not self._rows:
             msg = self.font_info.render("No hay IAs entrenadas guardadas.", True, (180, 180, 200))
@@ -97,9 +97,8 @@ class DeleteScreen:
             surface.blit(sub, sub.get_rect(centerx=cx, top=98))
             for path, label, btn in self._rows:
                 ry = btn.rect.y
-                pygame.draw.rect(surface, (24, 26, 46),
-                                 (50, ry - 6, WINDOW_WIDTH - 100, self.ROW_STEP - 8),
-                                 border_radius=6)
+                comic.panel(surface, (50, ry - 6, WINDOW_WIDTH - 100, self.ROW_STEP - 8),
+                            radius=8, border_w=3, shadow=False)
                 ls = self.font_row.render(label, True, WHITE)
                 surface.blit(ls, (66, ry + 2))
                 btn.draw(surface)
@@ -121,8 +120,7 @@ class DeleteScreen:
         cx = WINDOW_WIDTH // 2
         bw, bh = 560, 180
         bx, by = cx - bw // 2, WINDOW_HEIGHT // 2 - bh // 2
-        pygame.draw.rect(surface, (20, 22, 42), (bx, by, bw, bh), border_radius=10)
-        pygame.draw.rect(surface, (200, 80, 80), (bx, by, bw, bh), 2, border_radius=10)
+        comic.panel(surface, (bx, by, bw, bh), fill=(34, 44, 116), radius=12, border_w=4)
 
         q = self.font_info.render("¿Eliminar esta IA entrenada?", True, WHITE)
         surface.blit(q, q.get_rect(centerx=cx, top=by + 22))

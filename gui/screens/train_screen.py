@@ -13,6 +13,7 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font
 from gui.components.button import Button
+from gui import comic
 from ai.genetic_trainer import run_genetic, save_genetic_weights, default_opponent_panel
 from ai.registry import refresh_registry
 from ai.heuristic_advanced import DEFAULT_WEIGHTS
@@ -171,7 +172,7 @@ class TrainScreen:
         pass
 
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
+        comic.sub_background(surface)
         if self.phase == "CONFIG":
             self._draw_config(surface)
         elif self.phase == "RUNNING":
@@ -183,8 +184,7 @@ class TrainScreen:
 
     def _draw_config(self, surface):
         cx = WINDOW_WIDTH // 2
-        title = self.font_title.render("Entrenar IA Genetica", True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=cx, top=55))
+        comic.title(surface, "Entrenar IA Genetica", (cx, 76), size=34)
 
         sub = self.font_info.render(
             "El AG evoluciona los pesos de un Minimax contra un panel (Random/Basica/Avanzada).",
@@ -234,8 +234,7 @@ class TrainScreen:
 
         avg = hist[-1][3] if hist else 0.0
 
-        title = self.font_title.render("Evolucionando...", True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=cx, top=55))
+        comic.title(surface, "Evolucionando...", (cx, 76), size=34)
 
         # Texto de progreso (generacion + batallas)
         gtxt = self.font_lbl.render(f"Generacion {cur_gen} / {total_g}", True, WHITE)
@@ -326,8 +325,7 @@ class TrainScreen:
 
         cancelled = self._cancel
         title_txt = "Entrenamiento cancelado" if cancelled else "Entrenamiento completado!"
-        title = self.font_title.render(title_txt, True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=cx, top=55))
+        comic.title(surface, title_txt, (cx, 76), size=30)
 
         fit = data.get("fitness", 0.0) if data else 0.0
         big = self.font_big.render(f"{fit:.0%}", True, (120, 230, 150))
@@ -370,8 +368,9 @@ class TrainScreen:
 
     def _draw_error(self, surface):
         cx = WINDOW_WIDTH // 2
-        title = self.font_title.render("Error en el entrenamiento", True, (240, 120, 120))
-        surface.blit(title, title.get_rect(centerx=cx, top=120))
+        comic.outlined_text(surface, "Error en el entrenamiento", 34, (cx, 140),
+                            fill=(245, 140, 140), outline=comic.INK, ow=4,
+                            weight="bold", shadow=comic.RED)
         msg = self.font_info.render(str(self._error or "desconocido"), True, (230, 200, 200))
         surface.blit(msg, msg.get_rect(centerx=cx, top=180))
         self.btn_done.draw(surface)

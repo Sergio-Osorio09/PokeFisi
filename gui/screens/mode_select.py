@@ -2,6 +2,7 @@ import pygame
 from config import WHITE, BG_COLOR, WINDOW_WIDTH, WINDOW_HEIGHT
 from gui.assets_loader import get_font
 from gui.components.button import Button
+from gui import comic
 
 _WEIGHT_LABELS = ["alive", "hp_mio", "hp_opp", "tipo", "vel", "vivos"]
 
@@ -173,11 +174,10 @@ class ModeSelect:
     # ── draw ──────────────────────────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface):
-        surface.fill(BG_COLOR)
+        comic.sub_background(surface)
         cx = WINDOW_WIDTH // 2
 
-        title = self.font_title.render("Modo de Juego", True, (255, 220, 0))
-        surface.blit(title, title.get_rect(centerx=cx, top=55))
+        comic.title(surface, "Modo de Juego", (cx, 78), size=40)
 
         self.btn_human.draw(surface)
         self.btn_ai.draw(surface)

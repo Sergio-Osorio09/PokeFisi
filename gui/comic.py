@@ -153,3 +153,55 @@ def ribbon(surface, center, text_str, size=18, fill=RED, text_col=PAPER,
     outlined_text(surface, text_str, size, rect.center, fill=text_col,
                   outline=INK, ow=1, weight=weight)
     return rect
+
+
+# ── Fondo calmado para pantallas de contenido ───────────────────────────────────
+_sub_cache: dict = {}
+
+
+def sub_background(surface: pygame.Surface):
+    """Fondo cómic más sobrio (sin rayos agresivos) para pantallas densas:
+    degradado azul + glow superior + líneas de velocidad. Cacheado."""
+    size = surface.get_size()
+    if size not in _sub_cache:
+        w, h = size
+        bg = pygame.Surface(size).convert()
+        top, bot = (40, 74, 156), FIELD_BLUE
+        for y in range(h):
+            t = y / max(1, h - 1)
+            bg.fill((int(top[0] + (bot[0] - top[0]) * t),
+                     int(top[1] + (bot[1] - top[1]) * t),
+                     int(top[2] + (bot[2] - top[2]) * t)), (0, y, w, 1))
+        glow = pygame.Surface(size, pygame.SRCALPHA)
+        gr = int(w * 0.5)
+        for i in range(gr, 0, -3):
+            a = int(55 * (1 - i / gr))
+            pygame.draw.circle(glow, (120, 200, 255, a), (w // 2, int(h * 0.14)), i)
+        bg.blit(glow, (0, 0))
+        speed = pygame.Surface(size, pygame.SRCALPHA)
+        for i in range(-h, w, 48):
+            pygame.draw.line(speed, (255, 255, 255, 11), (i, h), (i + h, 0), 10)
+        bg.blit(speed, (0, 0))
+        _sub_cache[size] = bg.convert()
+    surface.blit(_sub_cache[size], (0, 0))
+
+
+# ── Panel/tarjeta estilo cómic ──────────────────────────────────────────────────
+PANEL_FILL = (34, 56, 128)        # azul de paneles sobre el fondo
+
+
+def panel(surface, rect, fill=PANEL_FILL, radius: int = 12, border_w: int = 4,
+          shadow: bool = True):
+    """Tarjeta con relleno, borde negro grueso y sombra dura (sello cómic)."""
+    rect = pygame.Rect(rect)
+    if shadow:
+        pygame.draw.rect(surface, INK, rect.move(6, 7), border_radius=radius)
+    pygame.draw.rect(surface, fill, rect, border_radius=radius)
+    if border_w:
+        pygame.draw.rect(surface, INK, rect, border_w, border_radius=radius)
+
+
+def title(surface, s, center, size: int = 40, rotate: int = -2):
+    """Título dorado tipo sticker (acceso directo a outlined_text)."""
+    return outlined_text(surface, s, size, center, fill=SUN1, outline=INK,
+                         ow=4, weight="bold", shadow=RED, rotate=rotate)
