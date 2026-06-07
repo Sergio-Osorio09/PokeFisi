@@ -759,5 +759,261 @@
       66
     ],
     "image_back": "assets/images/pokemon/back/clefable.png"
+  },
+  {
+    "id": 31,
+    "name": "Raichu",
+    "types": [
+      "Electric"
+    ],
+    "image": "assets/images/pokemon/raichu.png",
+    "stats": {
+      "hp": 60,
+      "attack": 90,
+      "defense": 55,
+      "speed": 110
+    },
+    "move_ids": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      67,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/raichu.png"
+  },
+  {
+    "id": 32,
+    "name": "Ninetales",
+    "types": [
+      "Fire"
+    ],
+    "image": "assets/images/pokemon/ninetales.png",
+    "stats": {
+      "hp": 73,
+      "attack": 76,
+      "defense": 75,
+      "speed": 100
+    },
+    "move_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      65,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/ninetales.png"
+  },
+  {
+    "id": 33,
+    "name": "Golem",
+    "types": [
+      "Rock",
+      "Ground"
+    ],
+    "image": "assets/images/pokemon/golem.png",
+    "stats": {
+      "hp": 80,
+      "attack": 120,
+      "defense": 130,
+      "speed": 45
+    },
+    "move_ids": [
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      65,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/golem.png"
+  },
+  {
+    "id": 34,
+    "name": "Nidoking",
+    "types": [
+      "Ground",
+      "Poison"
+    ],
+    "image": "assets/images/pokemon/nidoking.png",
+    "stats": {
+      "hp": 81,
+      "attack": 102,
+      "defense": 77,
+      "speed": 85
+    },
+    "move_ids": [
+      54,
+      55,
+      56,
+      33,
+      34,
+      35,
+      63,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/nidoking.png"
+  },
+  {
+    "id": 35,
+    "name": "Cloyster",
+    "types": [
+      "Water",
+      "Ice"
+    ],
+    "image": "assets/images/pokemon/cloyster.png",
+    "stats": {
+      "hp": 50,
+      "attack": 95,
+      "defense": 180,
+      "speed": 70
+    },
+    "move_ids": [
+      7,
+      9,
+      11,
+      50,
+      51,
+      52,
+      53,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/cloyster.png"
+  },
+  {
+    "id": 36,
+    "name": "Aerodactyl",
+    "types": [
+      "Rock",
+      "Flying"
+    ],
+    "image": "assets/images/pokemon/aerodactyl.png",
+    "stats": {
+      "hp": 80,
+      "attack": 105,
+      "defense": 65,
+      "speed": 130
+    },
+    "move_ids": [
+      57,
+      58,
+      59,
+      46,
+      47,
+      48,
+      67,
+      65
+    ],
+    "image_back": "assets/images/pokemon/back/aerodactyl.png"
+  },
+  {
+    "id": 37,
+    "name": "Sandslash",
+    "types": [
+      "Ground"
+    ],
+    "image": "assets/images/pokemon/sandslash.png",
+    "stats": {
+      "hp": 75,
+      "attack": 100,
+      "defense": 110,
+      "speed": 65
+    },
+    "move_ids": [
+      54,
+      55,
+      56,
+      57,
+      58,
+      69,
+      63,
+      67
+    ],
+    "image_back": "assets/images/pokemon/back/sandslash.png"
+  },
+  {
+    "id": 38,
+    "name": "Primeape",
+    "types": [
+      "Fighting"
+    ],
+    "image": "assets/images/pokemon/primeape.png",
+    "stats": {
+      "hp": 65,
+      "attack": 105,
+      "defense": 60,
+      "speed": 95
+    },
+    "move_ids": [
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      63,
+      67
+    ],
+    "image_back": "assets/images/pokemon/back/primeape.png"
+  },
+  {
+    "id": 39,
+    "name": "Victreebel",
+    "types": [
+      "Grass",
+      "Poison"
+    ],
+    "image": "assets/images/pokemon/victreebel.png",
+    "stats": {
+      "hp": 80,
+      "attack": 105,
+      "defense": 65,
+      "speed": 70
+    },
+    "move_ids": [
+      19,
+      20,
+      22,
+      23,
+      24,
+      33,
+      35,
+      63
+    ],
+    "image_back": "assets/images/pokemon/back/victreebel.png"
+  },
+  {
+    "id": 40,
+    "name": "Dodrio",
+    "types": [
+      "Normal",
+      "Flying"
+    ],
+    "image": "assets/images/pokemon/dodrio.png",
+    "stats": {
+      "hp": 60,
+      "attack": 110,
+      "defense": 70,
+      "speed": 100
+    },
+    "move_ids": [
+      46,
+      47,
+      48,
+      49,
+      63,
+      64,
+      67,
+      66
+    ],
+    "image_back": "assets/images/pokemon/back/dodrio.png"
   }
 ]
