@@ -27,8 +27,8 @@ _BATTLE_OPTS = [10, 20, 30, 50]
 _DEPTH_OPTS  = [2, 3]
 
 # Estimacion grosera de tiempo por batalla de minimax (ms), por profundidad.
-# Solo orienta al usuario; varia con la maquina.
-_MS_PER_BATTLE = {2: 120, 3: 900}
+# El entrenamiento corre a profundidad 1; las demas orientan el costo de juego.
+_MS_PER_BATTLE = {1: 25, 2: 120, 3: 900}
 
 
 class TrainScreen:
@@ -51,7 +51,7 @@ class TrainScreen:
             ("Poblacion",            "_pop_i", _POP_OPTS),
             ("Generaciones",         "_gen_i", _GEN_OPTS),
             ("Batallas/individuo",   "_bat_i", _BATTLE_OPTS),
-            ("Profundidad Minimax",  "_dep_i", _DEPTH_OPTS),
+            ("Profundidad de juego", "_dep_i", _DEPTH_OPTS),
         ]
         self._row_y0, self._row_step = 175, 66
         self._sel_buttons = []   # (prev_btn, next_btn, attr, opts)
@@ -99,8 +99,9 @@ class TrainScreen:
         return pop * gen * bat
 
     def _estimate_seconds(self) -> float:
-        depth = _DEPTH_OPTS[self._dep_i]
-        return self._estimate() * _MS_PER_BATTLE.get(depth, 1000) / 1000.0
+        # El entrenamiento corre a profundidad 1 (la profundidad de juego no
+        # afecta el costo de entrenar), así que el estimado usa el costo de d=1.
+        return self._estimate() * _MS_PER_BATTLE.get(1, 25) / 1000.0
 
     @staticmethod
     def _fmt_time(secs: float) -> str:
@@ -135,7 +136,8 @@ class TrainScreen:
                 pop_size=pop,
                 generations=gen,
                 battles_per_eval=bat,
-                minimax_depth=depth,
+                minimax_depth=depth,      # profundidad de JUEGO (se guarda)
+                train_depth=1,            # entrenar rápido a profundidad 1
                 opponent_factories=default_opponent_panel(),
                 callback=self._on_generation,
                 progress_cb=self._on_progress,
@@ -191,7 +193,7 @@ class TrainScreen:
             True, (190, 190, 210))
         surface.blit(sub, sub.get_rect(centerx=cx, top=108))
         sub2 = self.font_info.render(
-            "Minimax es costoso: valores altos tardan varios minutos.",
+            "Se entrena a profundidad 1 (rapido); la profundidad de juego solo afecta la fuerza al jugar.",
             True, (190, 190, 210))
         surface.blit(sub2, sub2.get_rect(centerx=cx, top=130))
 
@@ -213,7 +215,7 @@ class TrainScreen:
         surface.blit(est_surf, est_surf.get_rect(centerx=cx, top=460))
         if _DEPTH_OPTS[self._dep_i] == 3:
             warn = self.font_info.render(
-                "Profundidad 3 es MUY lenta (~8 s/batalla). Usa valores bajos para probar.",
+                "Profundidad de juego 3: juega mas fuerte pero mas lento por turno al jugar (el entrenamiento sigue rapido).",
                 True, (240, 150, 120))
             surface.blit(warn, warn.get_rect(centerx=cx, top=484))
 

@@ -54,31 +54,56 @@ def _make_scenarios(all_ids: list[int], n: int, n_opp: int = 1) -> list[tuple]:
              i % n_opp) for i in range(n)]
 
 
+def _team_strength(team: list) -> float:
+    """Fuerza restante de un equipo en [0, 1]: combina Pokémon vivos y HP.
+    1.0 = equipo completo a tope; 0.0 = todos derrotados."""
+    total = len(team)
+    if total == 0:
+        return 0.0
+    alive = sum(1 for p in team if p.is_alive())
+    hp    = sum(p.hp_ratio() for p in team)
+    return (alive + hp) / (2 * total)
+
+
 def _evaluate(weights: list[float], all_moves: dict, depth: int,
               scenarios: list[tuple], opponents: list,
-              should_stop=None, battle_cb=None) -> float:
-    """Fitness = win-rate de un MinimaxAgent (poda alfa-beta) con estos pesos,
-    jugando exactamente los 'scenarios' dados (equipos y semilla fijos) contra
-    el panel de 'opponents' (factories). Reusar los mismos escenarios reduce la
-    varianza; usar varios rivales reduce el sobreajuste a uno solo.
+              should_stop=None, battle_cb=None) -> tuple[float, float]:
+    """Mide unos pesos jugando exactamente los 'scenarios' dados (equipos y
+    semilla fijos) contra el panel de 'opponents' (factories). Devuelve:
+
+        (win_rate, fitness_continuo)
+
+    - win_rate         : fracción de batallas ganadas (métrica intuitiva; se muestra).
+    - fitness_continuo : promedio de una recompensa suave por batalla
+          recompensa = 0.5 + 0.5·(fuerza_mía − fuerza_rival)   ∈ [0, 1]
+      que da gradiente aunque el win/loss no cambie (ganar 3-0 ≠ ganar 1-0).
+      Es la señal que usa la SELECCIÓN del AG.
 
     should_stop : si devuelve True, corta entre batallas (cancelación granular).
     battle_cb   : se llama tras cada batalla jugada (para reportar progreso fino)."""
-    agent  = MinimaxAgent(depth=depth, weights=weights)
-    wins   = 0
-    played = 0
+    agent      = MinimaxAgent(depth=depth, weights=weights)
+    wins       = 0
+    played     = 0
+    reward_sum = 0.0
     for ids1, ids2, seed, opp_idx in scenarios:
         if should_stop is not None and should_stop():
             break
         random.seed(seed)   # mismo emparejamiento y azar para todos los individuos
         opponent = opponents[opp_idx]()
-        state = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
-        if Battle(state, agent, opponent).run() == 1:
+        # El agente entrenado es el jugador 1 → su equipo es player1_team.
+        state  = BattleState(build_team(ids1, all_moves), build_team(ids2, all_moves))
+        winner = Battle(state, agent, opponent).run()
+        if winner == 1:
             wins += 1
+        # Recompensa continua según la fuerza restante de cada lado al terminar.
+        reward_sum += 0.5 + 0.5 * (_team_strength(state.player1_team) -
+                                   _team_strength(state.player2_team))
         played += 1
         if battle_cb is not None:
             battle_cb()
-    return wins / played if played else 0.0
+    if not played:
+        return 0.0, 0.0
+    return wins / played, reward_sum / played
 
 
 def _tournament(population: list, fitnesses: list[float], k: int = 3) -> list[float]:
@@ -110,6 +135,7 @@ def run_genetic(pop_size: int = 12,
                 generations: int = 15,
                 battles_per_eval: int = 20,
                 minimax_depth: int = 2,
+                train_depth: int | None = None,
                 mutation_rate: float = 0.15,
                 mutation_strength: float = 0.10,
                 elite_k: int = 2,
@@ -132,7 +158,11 @@ def run_genetic(pop_size: int = 12,
     battles_per_eval  : batallas que juega cada individuo para medir su fitness.
                         Más batallas = fitness menos ruidoso; se usan los mismos
                         escenarios para todos los individuos de la generación (CRN)
-    minimax_depth     : profundidad del MinimaxAgent usado para evaluar cada individuo
+    minimax_depth     : profundidad de JUEGO del agente resultante (se guarda en el
+                        JSON y la usa GeneticAgent al jugar)
+    train_depth       : profundidad usada SOLO para medir el fitness durante el
+                        entrenamiento. Por defecto = minimax_depth. En 1 entrena
+                        mucho más rápido y con más señal; luego se juega a minimax_depth
     mutation_rate     : probabilidad de mutar cada gen  [0, 1]
     mutation_strength : desviación estándar de la mutación gaussiana
     elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
@@ -158,11 +188,22 @@ def run_genetic(pop_size: int = 12,
         opponent_factories = [HeuristicBasicAgent]
     n_opp = len(opponent_factories)
 
+    # Profundidad para medir el fitness durante el entrenamiento. Por defecto la
+    # de juego; ponerla en 1 (desde la GUI) entrena ~13x más rápido y con más
+    # señal, mientras el agente resultante sigue jugando a 'minimax_depth'.
+    eval_depth = train_depth if train_depth is not None else minimax_depth
+
+    # Escenarios FIJOS para TODA la corrida (no solo por generación): así el
+    # fitness es comparable entre generaciones y la curva "mejor global" sube de
+    # verdad, en vez de quedarse clavada en un máximo afortunado temprano.
+    scenarios = _make_scenarios(all_ids, battles_per_eval, n_opp)
+
     # Inicialización: población aleatoria
     population = [_random_individual() for _ in range(pop_size)]
 
-    best_weights  = None
-    best_fitness  = -1.0
+    best_weights = None
+    best_score   = -1.0     # fitness continuo del mejor (señal de SELECCIÓN)
+    best_winrate = 0.0      # win-rate del mejor (métrica que se muestra/guarda)
     history: list[dict] = []
 
     total_battles = pop_size * generations * battles_per_eval
@@ -171,12 +212,9 @@ def run_genetic(pop_size: int = 12,
 
     for gen in range(1, generations + 1):
 
-        # Escenarios compartidos por toda la generación (Common Random Numbers):
-        # todos los individuos se miden con los mismos emparejamientos y azar.
-        scenarios = _make_scenarios(all_ids, battles_per_eval, n_opp)
-
         # ── 1. Evaluación (con progreso y cancelación por batalla) ────────────
-        fitnesses: list[float] = []
+        scores:   list[float] = []   # fitness continuo (selección)
+        winrates: list[float] = []   # win-rate (visualización)
         for w in population:
             if should_stop is not None and should_stop():
                 break
@@ -186,48 +224,52 @@ def run_genetic(pop_size: int = 12,
                 battles_done += 1
                 if progress_cb is not None:
                     progress_cb(battles_done, total_battles, gen,
-                                generations, max(best_fitness, 0.0))
+                                generations, max(best_winrate, 0.0))
 
-            f = _evaluate(w, all_moves, minimax_depth, scenarios, opponent_factories,
-                          should_stop=should_stop, battle_cb=_battle_cb)
-            fitnesses.append(f)
+            wr, score = _evaluate(w, all_moves, eval_depth, scenarios,
+                                  opponent_factories,
+                                  should_stop=should_stop, battle_cb=_battle_cb)
+            scores.append(score)
+            winrates.append(wr)
 
-            # Mejor global incremental (no se pierde aunque se cancele a media gen)
-            if f > best_fitness:
-                best_fitness = f
+            # Mejor global incremental por fitness CONTINUO (no se pierde aunque
+            # se cancele a media gen). Se guarda su win-rate para mostrar/guardar.
+            if score > best_score:
+                best_score   = score
+                best_winrate = wr
                 best_weights = w[:]
 
-        if not fitnesses:
+        if not scores:
             break   # cancelado antes de evaluar nada en esta generación
 
-        actual_gens  = gen
-        gen_best_fit = max(fitnesses)
-        avg_fit      = sum(fitnesses) / len(fitnesses)
+        actual_gens = gen
+        gen_best_wr = max(winrates)
+        avg_wr      = sum(winrates) / len(winrates)
 
         history.append({
             "gen":          gen,
-            "best_gen":     round(gen_best_fit, 4),
-            "best_global":  round(best_fitness, 4),
-            "avg":          round(avg_fit, 4),
+            "best_gen":     round(gen_best_wr, 4),
+            "best_global":  round(best_winrate, 4),
+            "avg":          round(avg_wr, 4),
             "best_weights": best_weights[:],
         })
 
         if callback:
-            callback(gen, generations, gen_best_fit, best_fitness,
-                     avg_fit, population[:])
+            callback(gen, generations, gen_best_wr, best_winrate,
+                     avg_wr, population[:])
 
         # Cancelado a media generación o señal de parada: terminar aquí.
-        if len(fitnesses) < pop_size or (should_stop is not None and should_stop()):
+        if len(scores) < pop_size or (should_stop is not None and should_stop()):
             break
 
-        # ── 2. Elitismo ───────────────────────────────────────────────────────
-        sorted_pairs = sorted(zip(fitnesses, population), reverse=True)
+        # ── 2. Elitismo (por fitness continuo) ────────────────────────────────
+        sorted_pairs = sorted(zip(scores, population), reverse=True)
         new_pop      = [ind for _, ind in sorted_pairs[:elite_k]]
 
         # ── 3. Reproducción ───────────────────────────────────────────────────
         while len(new_pop) < pop_size:
-            p1    = _tournament(population, fitnesses)
-            p2    = _tournament(population, fitnesses)
+            p1    = _tournament(population, scores)
+            p2    = _tournament(population, scores)
             child = _crossover(p1, p2)
             child = _mutate(child, mutation_rate, mutation_strength)
             new_pop.append(child)
@@ -236,15 +278,18 @@ def run_genetic(pop_size: int = 12,
 
     if best_weights is None:          # salvaguarda: nunca se evaluó nada
         best_weights = population[0][:]
-        best_fitness = max(best_fitness, 0.0)
+        best_winrate = max(best_winrate, 0.0)
+        best_score   = max(best_score, 0.0)
 
     return {
         "weights":           best_weights,
-        "fitness":           best_fitness,
+        "fitness":           best_winrate,        # win-rate (titular, intuitivo)
+        "fitness_continuo":  round(best_score, 4),
         "generations":       actual_gens or generations,
         "pop_size":          pop_size,
         "battles_per_eval":  battles_per_eval,
-        "minimax_depth":     minimax_depth,
+        "minimax_depth":     minimax_depth,       # profundidad de JUEGO
+        "train_depth":       eval_depth,          # profundidad de ENTRENAMIENTO
         "mutation_rate":     mutation_rate,
         "mutation_strength": mutation_strength,
         "elite_k":           elite_k,
