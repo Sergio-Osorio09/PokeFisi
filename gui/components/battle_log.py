@@ -70,10 +70,11 @@ class BattleLog:
             surf  = self.font.render(text, True, color)
             surface.blit(surf, (pad_x, pad_y + i * line_h))
 
-        # Indicador ▼ si hay contenido anterior no visible
+        # Indicador (triángulo dibujado) si hay contenido anterior no visible
         if len(wrapped) > self.max_lines:
-            arrow = get_font(14).render("▼", True, GOLD)
-            surface.blit(arrow, (self.rect.right - 20, self.rect.bottom - 20))
+            ax, ay = self.rect.right - 20, self.rect.bottom - 18
+            pygame.draw.polygon(surface, GOLD,
+                                [(ax, ay), (ax + 11, ay), (ax + 5, ay + 7)])
 
     # ── Color según tipo de línea ─────────────────────────────────────────────
     def _line_color(self, line: str) -> tuple:

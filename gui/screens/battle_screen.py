@@ -280,7 +280,7 @@ class BattleScreen:
 
         # Último ataque / acción
         if last_move:
-            col = (120, 220, 255) if last_move.startswith("↩") else (220, 220, 160)
+            col = (120, 220, 255) if last_move.startswith("<-") else (220, 220, 160)
             surface.blit(self.fn_hp.render(last_move, True, col), (x, y + 38))
 
         # Barra de HP  (desplazada 16px hacia abajo para dejar espacio a la acción)
@@ -354,9 +354,9 @@ class BattleScreen:
                     pid = s[1]
                     pname = s.split(" a ")[1].rstrip("!")
                     if pid == "1":
-                        self._last_move_p1 = f"↩ {pname}"
+                        self._last_move_p1 = f"<- {pname}"
                     elif pid == "2":
-                        self._last_move_p2 = f"↩ {pname}"
+                        self._last_move_p2 = f"<- {pname}"
                 except (IndexError, ValueError):
                     pass
 
@@ -393,7 +393,7 @@ class BattleScreen:
         overlay.fill((10, 10, 30, 200))
         surface.blit(overlay, (ox, oy))
         pygame.draw.rect(surface, (255, 200, 0), (ox, oy, ow, oh), 2, border_radius=6)
-        txt = get_font(24).render("⏸  PAUSADO", True, (255, 220, 80))
+        txt = get_font(24).render("|| PAUSADO", True, (255, 220, 80))
         surface.blit(txt, txt.get_rect(center=(ox + ow // 2, oy + oh // 2)))
 
     # ── Paneles de cerebro IA ─────────────────────────────────────────────────
