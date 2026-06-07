@@ -344,9 +344,9 @@ class BattleScreen:
                     pid = s[1]   # "1" o "2"
                     move = s.split(" usó ")[1].split("!")[0].split("...")[0].strip()
                     if pid == "1":
-                        self._last_move_p1 = f"→ {move}"
+                        self._last_move_p1 = f"> {move}"
                     elif pid == "2":
-                        self._last_move_p2 = f"→ {move}"
+                        self._last_move_p2 = f"> {move}"
                 except (IndexError, ValueError):
                     pass
             elif " cambia a " in s or " envía a " in s:

@@ -118,8 +118,8 @@ class Battle:
             defender.take_damage(damage)
             self._log(
                 f"  P{player_id} {attacker.name} usó {move.name}! "
-                f"({move.type}→{'/'.join(defender.types)}, x{mult:.1f}){eff} "
-                f"→ {damage} daño. {defender.name} tiene {defender.current_hp}/{defender.max_hp} HP."
+                f"({move.type} vs {'/'.join(defender.types)}, x{mult:.1f}){eff} "
+                f"-> {damage} daño. {defender.name} tiene {defender.current_hp}/{defender.max_hp} HP."
             )
 
         if not defender.is_alive():
