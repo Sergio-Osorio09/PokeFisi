@@ -58,6 +58,32 @@ SLOT_H  = 30
 SLOT_GAP = 4
 
 
+# ── Plataforma (piso circular en perspectiva) bajo cada Pokémon ────────────────
+def draw_platform(surface, cx, cy, w):
+    """Dibuja una plataforma elíptica centrada en (cx, cy) con ancho w.
+    Se renderiza con supersampling (x4) + smoothscale para bordes suaves."""
+    h   = max(12, int(w * 0.34))
+    SS  = 4
+    pad = 7 * SS                       # espacio extra abajo para la sombra
+    pw, ph = w * SS, h * SS
+    plat = pygame.Surface((pw, ph + pad), pygame.SRCALPHA)
+
+    # Sombra suave proyectada
+    pygame.draw.ellipse(plat, (0, 0, 0, 55), (0, pad, pw, ph))
+    # Borde de tierra/arena
+    pygame.draw.ellipse(plat, (200, 188, 138), (0, 0, pw, ph))
+    # Césped interior
+    g = 5 * SS
+    pygame.draw.ellipse(plat, (102, 168, 70), (g, g, pw - 2 * g, ph - 2 * g))
+    # Brillo superior (mitad de arriba, más claro)
+    hl = 10 * SS
+    pygame.draw.ellipse(plat, (132, 198, 98),
+                        (hl, hl, pw - 2 * hl, (ph - 2 * hl) // 2))
+
+    plat = pygame.transform.smoothscale(plat, (w, h + 7))
+    surface.blit(plat, (cx - w // 2, cy - h // 2))
+
+
 # ── Botones ───────────────────────────────────────────────────────────────────
 class MoveButton:
     def __init__(self, index: int, move):
@@ -227,9 +253,17 @@ class BattleScreen:
         p2 = self.state.active_pokemon_p2
         p1 = self.state.active_pokemon_p1
 
-        # Sprites — P2 de frente, P1 de espaldas (vista clásica Pokémon)
-        surface.blit(get_pokemon_image(p2.image,      (P2_SPR_W, P2_SPR_H)), (P2_SPR_X, P2_SPR_Y))
-        surface.blit(get_pokemon_image(p1.image_back, (P1_SPR_W, P1_SPR_H)), (P1_SPR_X, P1_SPR_Y))
+        # Sprites + plataforma elíptica bajo los pies (alineada al contenido real
+        # del sprite, no a su caja, para que ningún Pokémon "flote")
+        spr2 = get_pokemon_image(p2.image,      (P2_SPR_W, P2_SPR_H))
+        spr1 = get_pokemon_image(p1.image_back, (P1_SPR_W, P1_SPR_H))
+        bb2, bb1 = spr2.get_bounding_rect(), spr1.get_bounding_rect()
+        draw_platform(surface, P2_SPR_X + bb2.centerx, P2_SPR_Y + bb2.bottom - 10,
+                      max(int(bb2.width * 1.25), 130))
+        draw_platform(surface, P1_SPR_X + bb1.centerx, P1_SPR_Y + bb1.bottom - 12,
+                      max(int(bb1.width * 1.30), 150))
+        surface.blit(spr2, (P2_SPR_X, P2_SPR_Y))
+        surface.blit(spr1, (P1_SPR_X, P1_SPR_Y))
 
         # Info flotante
         self._draw_info(surface, p2, self.label2, self.state.player2_team, self._seen_p2,
