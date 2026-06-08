@@ -136,9 +136,10 @@ def run_genetic(pop_size: int = 12,
                 battles_per_eval: int = 20,
                 minimax_depth: int = 2,
                 train_depth: int | None = None,
-                mutation_rate: float = 0.15,
-                mutation_strength: float = 0.10,
+                mutation_rate: float = 0.20,
+                mutation_strength: float = 0.15,
                 elite_k: int = 2,
+                immigrants: int = 2,
                 opponent_factories=None,
                 callback=None,
                 should_stop=None,
@@ -166,6 +167,8 @@ def run_genetic(pop_size: int = 12,
     mutation_rate     : probabilidad de mutar cada gen  [0, 1]
     mutation_strength : desviación estándar de la mutación gaussiana
     elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
+    immigrants        : individuos aleatorios nuevos inyectados cada generación
+                        (mantienen diversidad y evitan la convergencia prematura)
     callback          : función opcional llamada al final de cada generación con
                         (gen, total, best_gen_fit, best_global_fit, avg_fit, population)
     should_stop       : callable opcional sin args; si devuelve True se detiene la
@@ -268,7 +271,13 @@ def run_genetic(pop_size: int = 12,
         sorted_pairs = sorted(zip(scores, population), reverse=True)
         new_pop      = [ind for _, ind in sorted_pairs[:elite_k]]
 
-        # ── 3. Reproducción ───────────────────────────────────────────────────
+        # ── 3. Inmigrantes aleatorios: sangre nueva cada generación para
+        #       mantener diversidad y escapar de óptimos locales (anti
+        #       convergencia prematura). Los élites garantizan no perder al mejor.
+        for _ in range(min(immigrants, max(0, pop_size - len(new_pop)))):
+            new_pop.append(_random_individual())
+
+        # ── 4. Reproducción (cruce + mutación) ────────────────────────────────
         while len(new_pop) < pop_size:
             p1    = _tournament(population, scores)
             p2    = _tournament(population, scores)
@@ -295,6 +304,7 @@ def run_genetic(pop_size: int = 12,
         "mutation_rate":     mutation_rate,
         "mutation_strength": mutation_strength,
         "elite_k":           elite_k,
+        "immigrants":        immigrants,
         "opponents":         [c().name for c in opponent_factories],
         "history":           history,
     }
