@@ -24,10 +24,12 @@ las hojas del árbol minimax. Por defecto son `[0.40, 0.35, 0.15, 0.10]`, defini
 a mano. El AG encuentra automáticamente cuáles pesos hacen que el **Minimax** gane
 más batallas: cada individuo se mide jugando con un `MinimaxAgent` que usa esos pesos.
 
-> **Nota de costo:** evaluar con minimax es mucho más caro que con la heurística
-> directa (el minimax expande un árbol de varios turnos por decisión). Por eso los
-> valores por defecto del AG son más conservadores: `pop_size=12`, `generations=15`,
-> `battles_per_eval=6`, `minimax_depth=2`.
+> **Nota de costo:** evaluar con minimax es caro, pero el AG **entrena a profundidad 1**
+> (`train_depth=1`, rápido) y el agente resultante **juega a la profundidad elegida**
+> (`minimax_depth`). Los pesos describen *cómo valorar una posición*, lo cual es
+> independiente de la profundidad, así que se afinan barato y se despliegan hondo.
+> Valores por defecto: `pop_size=12`, `generations=15`, `battles_per_eval=20`,
+> `minimax_depth=2` (profundidad de **juego**), `train_depth=1`.
 
 ---
 
@@ -80,8 +82,11 @@ Ninguno sabe todavía qué tan bueno es. El AG lo descubrirá evaluando.
 
 ### Paso 1 — Evaluación de Fitness
 
-Cada individuo se inyecta como los pesos de un `MinimaxAgent` y juega **K batallas**
-contra `HeuristicaBasica`. Su fitness es su win-rate.
+Cada individuo se inyecta como los pesos de un `MinimaxAgent` (a `train_depth`) y juega
+**K batallas** contra un **panel de rivales** (Aleatorio, Básica y Avanzada), con
+**escenarios fijos** por corrida (los mismos equipos para todos → fitness comparable entre
+generaciones). La **selección** usa un **margen continuo** (no el win-rate binario, que es
+ruidoso); el **win-rate** se muestra y guarda como número titular.
 
 ```
 Individuo 1: juega 10 batallas → gana 7  → fitness = 0.70
@@ -90,7 +95,7 @@ Individuo 3: juega 10 batallas → gana 8  → fitness = 0.80  ← mejor
 Individuo 4: juega 10 batallas → gana 5  → fitness = 0.50
 ```
 
-**¿Por qué contra HeuristicaBasica?** Es suficientemente competente para distinguir pesos buenos de malos, pero lo bastante débil para que un buen conjunto de pesos lo venza con claridad.
+**¿Por qué un panel de rivales?** Entrenar contra varios oponentes (azar, heurística simple y avanzada) produce pesos más **robustos** que entrenar contra uno solo. El **margen continuo** da gradiente aunque el win/loss no cambie (ganar 3-0 ≠ ganar 1-0), lo que acelera el aprendizaje.
 
 ---
 
@@ -217,11 +222,14 @@ Gen 30/30  |  Mejor gen: █████████░ 90%  |  Mejor global: �
 |---|---|---|---|
 | `pop_size` | 12 | Más diversidad, más lento | Converge más rápido, riesgo de estancarse |
 | `generations` | 15 | Más refinamiento | Menos exploración |
-| `battles_per_eval` | 6 | Fitness más preciso, más lento | Rápido pero ruidoso |
-| `minimax_depth` | 2 | Minimax más fuerte y mucho más lento por batalla | Más rápido, búsqueda más superficial |
-| `mutation_rate` | 15% | Más exploración, menos estabilidad | Converge rápido, poco novedoso |
-| `mutation_strength` | 0.10 | Cambios más grandes | Ajuste fino |
+| `battles_per_eval` | 20 | Fitness más preciso, menos sobreajuste | Rápido pero ruidoso |
+| `minimax_depth` | 2 | Profundidad de **juego** del agente final | Juego más superficial |
+| `train_depth` | 1 | Entrenar más hondo (lento) | A 1: entrena ~13× más rápido y con más señal |
+| `mutation_rate` | 0.20 | Más exploración, menos estabilidad | Converge rápido, poco novedoso |
+| `mutation_strength` | 0.15 | Cambios más grandes | Ajuste fino |
 | `elite_k` | 2 | Más conservador | Más riesgo de perder el mejor |
+| `immigrants` | 2 | Más diversidad (anti-estancamiento) | Menos exploración nueva |
+| `truncation` | 0.40 | Más individuos se reproducen (menos presión) | Solo los mejores crían (más presión) |
 
 **Regla práctica:** Si el AG converge muy rápido sin mejorar, subir `mutation_rate`. Si no converge nunca, bajarlo.
 
@@ -292,18 +300,21 @@ velocidad:      0.07  (base 0.10)  ↓ menos importante en la práctica
 
 ```json
 {
-  "weights": [0.38, 0.41, 0.13, 0.07],
-  "fitness": 0.90,
-  "generations": 15,
-  "pop_size": 12,
-  "battles_per_eval": 6,
-  "minimax_depth": 2,
-  "mutation_rate": 0.15,
-  "mutation_strength": 0.10,
+  "weights": [0.26, 0.48, 0.18, 0.08],
+  "fitness": 0.62,            // margen continuo (lo que sube en la gráfica)
+  "win_rate": 0.62,          // win-rate del mejor (referencia)
+  "generations": 30,
+  "pop_size": 20,
+  "battles_per_eval": 20,
+  "minimax_depth": 2,        // profundidad de JUEGO (la usa GeneticAgent)
+  "train_depth": 1,          // profundidad de ENTRENAMIENTO
+  "mutation_rate": 0.20,
+  "mutation_strength": 0.15,
   "elite_k": 2,
+  "immigrants": 2,
+  "truncation": 0.4,
   "history": [
-    {"gen": 1, "best_gen": 0.80, "best_global": 0.80, "avg": 0.58, "best_weights": [...]},
-    {"gen": 2, "best_gen": 0.70, "best_global": 0.80, "avg": 0.62, "best_weights": [...]},
+    {"gen": 1, "best_gen": 0.58, "best_global": 0.58, "avg": 0.55, "win_rate": 0.56, "best_weights": [...]},
     ...
   ]
 }
@@ -334,21 +345,23 @@ INICIALIZAR población con N individuos aleatorios
 
 PARA gen EN 1..G:
     PARA cada individuo:
-        # el individuo son los pesos de un MinimaxAgent(depth=D)
-        fitness[i] = win_rate(Minimax(pesos=individuo[i]), K batallas vs panel de rivales)
+        # el individuo son los pesos de un MinimaxAgent(depth=train_depth)
+        fitness[i] = margen_continuo(Minimax(pesos=individuo[i]), K batallas vs panel, escenarios fijos)
 
     mejor_gen    = individuo con mayor fitness esta generación
     mejor_global = max(mejor_global, mejor_gen)   # nunca retrocede
 
     MOSTRAR progreso de gen
 
-    nueva_pop = elite_k mejores individuos (sin cambios)
+    nueva_pop  = elite_k mejores individuos (sin cambios)
+    nueva_pop += immigrants individuos aleatorios nuevos      # diversidad / anti-estancamiento
 
+    reproductores = el mejor `truncation` (40%) de la población   # selección por truncamiento
     MIENTRAS len(nueva_pop) < N:
-        padre_A = torneo(3 candidatos aleatorios)
-        padre_B = torneo(3 candidatos aleatorios)
+        padre_A = torneo(reproductores)
+        padre_B = torneo(reproductores)
         hijo    = crossover_uniforme(padre_A, padre_B)
-        hijo    = mutar(hijo, rate=0.15, σ=0.10)
+        hijo    = mutar(hijo, rate=0.20, σ=0.15)
         hijo    = normalizar(hijo)
         nueva_pop.agregar(hijo)
 

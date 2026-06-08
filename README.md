@@ -1,6 +1,6 @@
 # PokeFisi
 
-Simulador de combates por turnos estilo Pokémon con agentes de Inteligencia Artificial. Permite jugar Humano vs IA o enfrentar dos IAs entre sí, tanto desde una interfaz gráfica como desde la terminal. Incluye seis estrategias de IA —desde elección aleatoria hasta minimax con poda alfa-beta optimizado por un algoritmo genético— y un panel que muestra en tiempo real el razonamiento de cada agente.
+Simulador de combates por turnos estilo Pokémon con agentes de Inteligencia Artificial. Permite jugar Humano vs IA, enfrentar dos IAs entre sí, o lanzar un **torneo eliminatorio** entre varias IAs — todo desde una interfaz gráfica (con identidad visual estilo TCG/cómic) o desde la terminal. Incluye **40 Pokémon** y seis estrategias de IA —desde elección aleatoria hasta minimax con poda alfa-beta optimizado por un algoritmo genético— con un panel que muestra en tiempo real el razonamiento de cada agente.
 
 ---
 
@@ -163,11 +163,11 @@ Abre una ventana con menú, selección de Pokémon, entrenamiento de IA y pantal
 
 ### Modo GUI
 
-1. En el **menú principal** tienes cuatro botones: `NUEVA BATALLA`, `ENTRENAR IA GENETICA`, `ELIMINAR IAS ENTRENADAS` (borra pesos guardados con confirmación) y `SALIR`.
+1. En el **menú principal** tienes cinco botones: `NUEVA BATALLA`, `TORNEO DE IAS`, `ENTRENAR IA GENETICA`, `ELIMINAR IAS ENTRENADAS` (borra pesos guardados con confirmación) y `SALIR`.
 2. En `NUEVA BATALLA`, elige el modo: `HUMANO vs IA` o `IA vs IA`.
 3. Selecciona el agente de IA con los botones `<` y `>`. La pantalla muestra la descripción del agente y, según el tipo, sus **pesos** o una **tabla de capacidades** (profundidad, fitness, etc.) para comparar fácilmente entre opciones. Los agentes entrenados aparecen aquí automáticamente con su win-rate.
 4. Elige el tamaño del equipo (`3 vs 3` o `4 vs 4`) y pulsa `CONTINUAR`.
-5. En la pantalla de selección elige tu equipo haciendo clic en las tarjetas de Pokémon. Usa la **rueda del ratón** o la **barra lateral** para desplazarte y ver los 30 Pokémon.
+5. En la pantalla de selección elige tu equipo haciendo clic en las tarjetas de Pokémon. Usa la **rueda del ratón** o la **barra lateral** para desplazarte y ver los 40 Pokémon.
 6. Una vez completado tu equipo, elige el equipo rival y pulsa `INICIAR BATALLA`.
 7. Durante el combate pulsa los botones de movimiento para atacar o `CAMBIAR POKEMON` para cambiar al siguiente. A la derecha, el **panel cerebro** muestra en tiempo real qué está evaluando cada IA (ver más abajo).
 
@@ -231,9 +231,37 @@ Ejecuta `python main.py --console` (Windows) o `python3 main.py --console` (Linu
 
 ### Desde la GUI
 
-El botón **ENTRENAR IA GENETICA** del menú principal lanza el mismo entrenamiento genético sobre minimax con una **barra de progreso** y una **gráfica de fitness por generación**, sin congelar la interfaz, y permite **cancelar** en cualquier momento. Al terminar, el nuevo agente queda disponible en el selector sin reiniciar.
+El botón **ENTRENAR IA GENETICA** del menú principal lanza el entrenamiento genético sobre minimax con una **barra de progreso** y una **gráfica de fitness por generación**, sin congelar la interfaz, y permite **cancelar** en cualquier momento. Al terminar, el nuevo agente queda disponible en el selector sin reiniciar.
+
+> El entrenamiento se **mide a profundidad 1** (rápido) y el agente resultante **juega a la profundidad elegida**; usa un **fitness continuo** para la selección, **escenarios fijos** por corrida, e **inmigrantes aleatorios + selección por truncamiento** para evitar la convergencia prematura. Todo se detalla en [`docs/algoritmo_genetico.md`](docs/algoritmo_genetico.md).
 
 > El algoritmo genético se explica en detalle en [`docs/algoritmo_genetico.md`](docs/algoritmo_genetico.md).
+
+---
+
+## Modo Torneo y experimentos de IAs
+
+PokeFisi incluye un **banco de pruebas** para comparar y documentar a todas las IAs.
+
+### Modo Torneo (GUI)
+
+El botón **TORNEO DE IAS** abre un modo donde eliges qué IAs participan y cuántas de cada una (total **2, 4 u 8**; se permiten duplicadas, p. ej. dos `Aleatorio`). Es **eliminatoria al mejor de 3**, con **equipos aleatorios 3v3** en cada batalla; el **bracket** se va llenando hasta coronar al campeón y al terminar guarda un reporte en `results/`.
+
+Para equilibrar los combates se **excluyen** los Pokémon más desbalanceados: **Mewtwo, Dragonite, Cloyster y Snorlax**.
+
+### Experimentos headless
+
+```bash
+python run_arena.py 50      # 50 batallas por par (por defecto 30)
+```
+
+Corre un **round-robin** (todos contra todos) y un torneo, y guarda reportes **JSON + Markdown** en `results/` con:
+
+- **Clasificación** (leaderboard) por win-rate, con **intervalo de confianza de Wilson**.
+- **Matriz head-to-head** (cada IA vs cada IA).
+- **Turnos** por batalla, **margen** de victoria y **ms por jugada** (costo de decisión).
+
+> Los reportes de `results/` no se versionan (son evidencia local generada).
 
 ---
 
@@ -242,10 +270,11 @@ El botón **ENTRENAR IA GENETICA** del menú principal lanza el mismo entrenamie
 ```
 PokeFisi/
 ├── main.py               # Punto de entrada — detecta --gui o --console
+├── run_arena.py          # Experimentos + torneo headless → reportes en results/
 ├── config.py             # Constantes globales (resolución, FPS, factor K=0.25)
 ├── requirements.txt      # Dependencias pip
 ├── data/
-│   ├── pokemon.json      # 30 Pokémon con stats y movimientos
+│   ├── pokemon.json      # 40 Pokémon con stats y movimientos
 │   ├── moves.json        # Movimientos con tipo, poder y precisión
 │   ├── weights_*.json    # Pesos entrenados de las heurísticas (al entrenar)
 │   └── genetic_*.json    # Pesos evolucionados del genético sobre minimax
@@ -266,14 +295,19 @@ PokeFisi/
 │   ├── genetic_trainer.py     # Algoritmo genético sobre minimax
 │   ├── trainer.py        # Entrenamiento hill-climbing de las heurísticas
 │   └── registry.py       # Registro central de agentes disponibles
+├── arena/                # Núcleo de experimentos y torneo (round-robin, bracket, reportes)
 ├── console/              # Modo consola (texto puro)
-├── gui/                  # Interfaz gráfica con pygame
-│   ├── screens/          # Menú, selección, combate, resultados, entrenamiento, eliminación
+├── gui/                  # Interfaz gráfica con pygame (tema TCG/cómic en gui/comic.py)
+│   ├── screens/          # Menú, selección, combate, resultados, entrenamiento, torneo, eliminación
 │   └── components/       # Botón, barra HP, tarjeta Pokémon, log de batalla
 ├── docs/
-│   ├── algoritmo_genetico.md  # Explicación del algoritmo genético
+│   ├── algoritmo_genetico.md     # Algoritmo genético (entrenamiento del Minimax)
+│   ├── minimax.md, expectimax.md # Búsqueda adversaria
+│   ├── heuristica_*.md, agente_aleatorio.md  # Docs de cada agente
+│   ├── torneo_experimentos.md    # Modo Torneo y banco de pruebas de IAs
 │   └── informe/          # Informe académico (LaTeX, formato ACL)
 ├── assets/               # Sprites y fuentes
+├── results/              # Reportes generados por el torneo / run_arena.py (no versionado)
 └── tests/                # Tests unitarios del motor de combate
 ```
 
@@ -292,7 +326,7 @@ Verifica que la fórmula de daño, la tabla de tipos y el flujo de batalla funci
 
 ## Informe académico
 
-En [`docs/informe/`](docs/informe/) está el informe del proyecto en LaTeX (formato ACL), con la metodología, los experimentos (torneo entre agentes, efecto de la profundidad y la poda alfa-beta, elitismo del genético) y sus resultados. Las figuras se reproducen con `python docs/informe/run_experiments.py` (requiere `matplotlib`, instalable con `pip install matplotlib`).
+En [`docs/informe/`](docs/informe/) está el informe del proyecto en LaTeX (formato ACL), con la metodología, los experimentos (torneo entre agentes, efecto de la profundidad y la poda alfa-beta, elitismo del genético) y sus resultados. Las figuras se reproducen con `python docs/informe/run_experiments.py` (requiere `matplotlib`, instalable con `pip install matplotlib`). El **banco de pruebas de IAs** (clasificación + torneo, ver más abajo) se genera con `python run_arena.py`.
 
 ---
 
