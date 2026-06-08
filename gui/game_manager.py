@@ -37,6 +37,15 @@ class GameManager:
             from gui.screens.delete_screen import DeleteScreen
             self._screen = DeleteScreen()
 
+        elif state_name == "TOURNAMENT_SELECT":
+            from gui.screens.tournament_select import TournamentSelect
+            self._screen = TournamentSelect()
+
+        elif state_name == "TOURNAMENT":
+            (competitors,) = args
+            from gui.screens.tournament_screen import TournamentScreen
+            self._screen = TournamentScreen(competitors)
+
         elif state_name == "POKEMON_SELECT":
             mode, team_size, ai1_idx, ai2_idx = args
             self._mode_config = (mode, team_size, ai1_idx, ai2_idx)
