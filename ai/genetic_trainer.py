@@ -140,6 +140,7 @@ def run_genetic(pop_size: int = 12,
                 mutation_strength: float = 0.15,
                 elite_k: int = 2,
                 immigrants: int = 2,
+                truncation: float = 0.40,
                 opponent_factories=None,
                 callback=None,
                 should_stop=None,
@@ -169,6 +170,9 @@ def run_genetic(pop_size: int = 12,
     elite_k           : cuántos mejores individuos pasan sin cambios a la siguiente gen
     immigrants        : individuos aleatorios nuevos inyectados cada generación
                         (mantienen diversidad y evitan la convergencia prematura)
+    truncation        : fracción [0,1] de la población elegible como padre
+                        (selección por truncamiento: solo el mejor `truncation`
+                        se reproduce). Más bajo = más presión hacia los mejores
     callback          : función opcional llamada al final de cada generación con
                         (gen, total, best_gen_fit, best_global_fit, avg_fit, population)
     should_stop       : callable opcional sin args; si devuelve True se detiene la
@@ -277,10 +281,16 @@ def run_genetic(pop_size: int = 12,
         for _ in range(min(immigrants, max(0, pop_size - len(new_pop)))):
             new_pop.append(_random_individual())
 
-        # ── 4. Reproducción (cruce + mutación) ────────────────────────────────
+        # ── 4. Reproducción por TRUNCAMIENTO: solo el mejor `truncation` de la
+        #       población es elegible como padre (presión fuerte hacia los buenos);
+        #       los inmigrantes evitan que la diversidad colapse.
+        n_breeders     = max(2, int(round(truncation * pop_size)))
+        breeders       = [ind for _, ind in sorted_pairs[:n_breeders]]
+        breeder_scores = [sc  for sc, _  in sorted_pairs[:n_breeders]]
+        k_tour         = min(3, n_breeders)
         while len(new_pop) < pop_size:
-            p1    = _tournament(population, scores)
-            p2    = _tournament(population, scores)
+            p1    = _tournament(breeders, breeder_scores, k_tour)
+            p2    = _tournament(breeders, breeder_scores, k_tour)
             child = _crossover(p1, p2)
             child = _mutate(child, mutation_rate, mutation_strength)
             new_pop.append(child)
@@ -305,6 +315,7 @@ def run_genetic(pop_size: int = 12,
         "mutation_strength": mutation_strength,
         "elite_k":           elite_k,
         "immigrants":        immigrants,
+        "truncation":        truncation,
         "opponents":         [c().name for c in opponent_factories],
         "history":           history,
     }
