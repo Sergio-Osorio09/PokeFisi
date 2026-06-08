@@ -326,7 +326,7 @@ Verifica que la fórmula de daño, la tabla de tipos y el flujo de batalla funci
 
 ## Informe académico
 
-En [`docs/informe/`](docs/informe/) está el informe del proyecto en LaTeX (formato ACL), con la metodología, los experimentos (torneo entre agentes, efecto de la profundidad y la poda alfa-beta, elitismo del genético) y sus resultados. Las figuras se reproducen con `python docs/informe/run_experiments.py` (requiere `matplotlib`, instalable con `pip install matplotlib`). El **banco de pruebas de IAs** (clasificación + torneo, ver más abajo) se genera con `python run_arena.py`.
+En [`docs/informe/`](docs/informe/) está el informe del proyecto en LaTeX (formato ACL), con la metodología, los experimentos (torneo entre agentes, efecto de la profundidad y la poda alfa-beta, elitismo del genético) y sus resultados. Las figuras y tablas se reproducen con los scripts de `docs/informe/`: `run_experiments.py` (Experimentos A–C + figuras, requiere `matplotlib`), `run_variants.py` (D) y `run_experiment_E.py` (E). El **banco de pruebas de IAs** (clasificación + torneo, ver más abajo) se genera con `python run_arena.py`.
 
 ---
 

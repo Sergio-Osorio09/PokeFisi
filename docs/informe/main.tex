@@ -484,14 +484,15 @@ resultado consistente.
 \toprule
 Configuración (5 corridas) & mín. & media & máx. \\
 \midrule
-Sin inmigrantes & 58 & 61 & 61 \\
-Con inmigrantes & 61 & 61 & 61 \\
+Sin inmigrantes & 58.0 & 61.5 & 62.7 \\
+Con inmigrantes & 61.3 & 61.4 & 62.0 \\
 \bottomrule
 \end{tabular}}
 \caption{Robustez del genético refinado: win-rate (\%) de cinco corridas
 independientes con y sin inmigrantes aleatorios (entrenamiento a profundidad 1,
-evaluado en 150 escenarios). Los inmigrantes eliminan las corridas pobres y dejan
-el resultado estable en $\sim$61\%.}
+evaluado en 150 escenarios). Los inmigrantes elevan el \emph{piso} (la peor
+corrida pasa de $58$ a $61$) y reducen la varianza entre corridas, dejando el
+resultado consistente en $\sim$61\,--\,62\%.}
 \label{tab:robustez}
 \end{table}
 
@@ -513,15 +514,15 @@ la decisión en este dominio.
 \toprule
 Pesos & vs panel ($d{=}1$) & vs panel ($d{=}2$) \\
 \midrule
-Por defecto $(.40,.35,.15,.10)$ & 55.5 & 54.7 \\
-Genético (evolucionados)        & 62.0 & $\sim$61 \\
-Solo HP $(0,1,0,0)$             & \textbf{64.2} & \textbf{64.0} \\
+Por defecto $(.40,.35,.15,.10)$ & 54.0 & 54.7 \\
+Genético (evolucionados)        & 59.3 & 56.0 \\
+Solo HP $(0,1,0,0)$             & \textbf{64.0} & \textbf{64.0} \\
 \bottomrule
 \end{tabular}}
 \caption{Techo de la evaluación de cuatro pesos: win-rate (\%) frente al panel
 ($150$ escenarios, los mismos para todos). Un vector que solo pondera el HP
-alcanza el máximo ($\sim$64\%); el genético se acerca, y los pesos por defecto
-quedan $\sim$10 puntos por debajo.}
+alcanza el máximo ($64\%$); el genético se acerca ($56$\,--\,$59\%$) y los pesos
+por defecto quedan $\sim$10 puntos por debajo ($54\%$).}
 \label{tab:techo}
 \end{table}
 
@@ -529,9 +530,9 @@ quedan $\sim$10 puntos por debajo.}
 evaluación más rica rompería ese techo, comparamos la Heurística Avanzada
 (4 componentes) con la Mejorada (6 componentes: amenaza de KO, peligro de ser
 noqueado y cobertura de equipo). La Tabla~\ref{tab:avzmej} muestra que, pese a su
-mayor sofisticación, la Mejorada \textbf{apenas supera} a la Avanzada ---$53\%$ en
-enfrentamiento directo (dentro del ruido) y empate frente a los rivales del
-panel--- a un coste de cómputo \textbf{el doble}. La causa es que el motor es
+mayor sofisticación, la Mejorada \textbf{no aporta win-rate} sobre la Avanzada
+---empate técnico ($45\%$ en enfrentamiento directo, dentro del ruido)--- a un
+coste de cómputo $\sim$\textbf{4$\times$} por decisión. La causa es que el motor es
 deliberadamente simple (daño, tipo, velocidad y precisión; sin estados de
 alteración ni distinción físico/especial), por lo que no hay margen táctico
 adicional que una evaluación más rica pueda explotar.
@@ -543,13 +544,13 @@ adicional que una evaluación más rica pueda explotar.
 \toprule
  & vs Bás. & vs Rand & H2H & ms/dec. \\
 \midrule
-H.\ Avanzada (4) & 58 & 84 & ---  & \textbf{1.9} \\
-H.\ Mejorada (6) & 59 & 83 & 53 & 3.9 \\
+H.\ Avanzada (4) & 63.3 & 87.3 & ---  & \textbf{0.1} \\
+H.\ Mejorada (6) & 58.0 & 82.0 & 45.3 & 0.4 \\
 \bottomrule
 \end{tabular}}
 \caption{Avanzada vs.\ Mejorada ($150$ batallas, mismos escenarios). La evaluación
 más rica (6 componentes) no mejora el win-rate de forma apreciable (enfrentamiento
-directo $53\%$, dentro del ruido) y cuesta $\sim$2$\times$ por decisión.}
+directo $45\%$, dentro del ruido) y cuesta $\sim$4$\times$ por decisión.}
 \label{tab:avzmej}
 \end{table}
 

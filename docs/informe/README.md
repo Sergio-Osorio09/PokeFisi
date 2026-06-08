@@ -7,8 +7,10 @@ Computational Linguistics* (ACL).
 - `main.tex` — documento principal (español, formato ACL).
 - `custom.bib` — bibliografía.
 - `figs/` — figuras generadas por los experimentos (PDF).
-- `run_experiments.py` — script que genera los datos y las figuras.
-- `results.json` — resultados numéricos de la última ejecución.
+- `run_experiments.py` — Experimentos A–C: torneo, profundidad/poda, elitismo (+ figuras).
+- `run_variants.py` — Experimento D: variantes (expectimax, panel de rivales).
+- `run_experiment_E.py` — Experimento E: refinamiento del genético, techo del eval, Avanzada vs Mejorada.
+- `results.json`, `results_variants.json`, `results_E.json` — resultados numéricos de cada bloque.
 
 ## Cómo compilar (Overleaf, recomendado)
 1. Abre la plantilla ACL: <https://www.overleaf.com/latex/templates/association-for-computational-linguistics-acl-conference/jvxskxpnznfj>.
@@ -19,6 +21,9 @@ Computational Linguistics* (ACL).
 ## Cómo reproducir los experimentos
 Desde la raíz del repositorio:
 ```bash
-python docs/informe/run_experiments.py
+python docs/informe/run_experiments.py     # A–C (figuras; requiere matplotlib)
+python docs/informe/run_variants.py        # D (variantes)
+python docs/informe/run_experiment_E.py    # E (refinamiento del genético; ~6 min)
 ```
-Genera `results.json` y las figuras en `figs/`. Requiere `matplotlib`.
+Cada script guarda su `results_*.json`; `run_experiments.py` además genera las
+figuras en `figs/`.
