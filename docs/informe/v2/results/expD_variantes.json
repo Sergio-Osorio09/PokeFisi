@@ -1,0 +1,74 @@
+{
+  "D1": {
+    "minimax": {
+      "Random": 75.0,
+      "Basica": 45.0,
+      "Avanzada": 40.0,
+      "GLOBAL": 53.3,
+      "CI": [
+        46.1,
+        60.5
+      ]
+    },
+    "expectimax": {
+      "Random": 73.3,
+      "Basica": 48.3,
+      "Avanzada": 46.7,
+      "GLOBAL": 56.1,
+      "CI": [
+        48.8,
+        63.2
+      ]
+    },
+    "expectimax_vs_minimax": 51.7,
+    "n": 60
+  },
+  "D2": {
+    "weights_single": [
+      0.221,
+      0.23,
+      0.36,
+      0.0,
+      0.029,
+      0.16
+    ],
+    "weights_multi": [
+      0.251,
+      0.195,
+      0.243,
+      0.063,
+      0.0,
+      0.247
+    ],
+    "single": {
+      "Random": 75.0,
+      "Basica": 55.0,
+      "Avanzada": 38.3,
+      "Minimax-d2": 43.3,
+      "GLOBAL": 52.9,
+      "CI": [
+        46.6,
+        59.1
+      ]
+    },
+    "multi": {
+      "Random": 63.3,
+      "Basica": 43.3,
+      "Avanzada": 48.3,
+      "Minimax-d2": 60.0,
+      "GLOBAL": 53.8,
+      "CI": [
+        47.4,
+        59.9
+      ]
+    },
+    "n": 60,
+    "train": {
+      "pop": 10,
+      "gens": 10,
+      "bpe": 15,
+      "train_depth": 1,
+      "evaluacion": "mejorada-6"
+    }
+  }
+}

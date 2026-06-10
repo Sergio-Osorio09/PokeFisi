@@ -1,0 +1,56 @@
+{
+  "cost": {
+    "1": {
+      "nodos_poda": 42.0,
+      "nodos_full": 42.0,
+      "podas": 0.0,
+      "reduccion": 0.0,
+      "ms_eval4": 0.63,
+      "ms_eval6": 1.35
+    },
+    "2": {
+      "nodos_poda": 742.9,
+      "nodos_full": 1549.0,
+      "podas": 83.3,
+      "reduccion": 52.0,
+      "ms_eval4": 9.98,
+      "ms_eval6": 30.71
+    },
+    "3": {
+      "nodos_poda": 10366.3,
+      "nodos_full": 55017.7,
+      "podas": 1668.0,
+      "reduccion": 81.2,
+      "ms_eval4": 125.77,
+      "ms_eval6": 422.44
+    }
+  },
+  "winrate_vs_basic": {
+    "1": {
+      "winrate": 52.5,
+      "ci": [
+        41.7,
+        63.1
+      ],
+      "turns": 10.4
+    },
+    "2": {
+      "winrate": 52.5,
+      "ci": [
+        41.7,
+        63.1
+      ],
+      "turns": 11.3
+    },
+    "3": {
+      "winrate": 38.8,
+      "ci": [
+        28.8,
+        49.7
+      ],
+      "turns": 10.7
+    }
+  },
+  "n_pos": 40,
+  "n_battles": 80
+}
