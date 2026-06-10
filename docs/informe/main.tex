@@ -293,32 +293,13 @@ Enfrentamos los \emph{siete} agentes ---Aleatorio, Heurística Básica, Heuríst
 Avanzada, Heurística Mejorada, Minimax ($d{=}2$), Genético-4 (minimax con cuatro
 pesos evolucionados) y Genético-6 (minimax con la evaluación mejorada de seis
 pesos evolucionados)--- en un torneo todos contra todos, con 80 batallas por
-emparejamiento y lados alternados. La Tabla~\ref{tab:torneo} y la
-Figura~\ref{fig:torneo} reportan el win-rate global de cada agente con su
-intervalo de Wilson al 95\% (480 batallas por agente).
-
-\begin{table}[t]
-\centering\small
-\begin{tabular}{lcc}
-\toprule
-\textbf{Agente} & \textbf{Glob.}\ (\%) & \textbf{IC 95\%} \\
-\midrule
-H.\ Avanzada    & \textbf{61.5} & $[57.0,\,65.7]$ \\
-H.\ Mejorada    & 57.9          & $[53.5,\,62.3]$ \\
-H.\ Básica      & 56.2          & $[51.8,\,60.6]$ \\
-Genético-4      & 54.4          & $[49.9,\,58.8]$ \\
-Genético-6      & 51.9          & $[47.4,\,56.3]$ \\
-Minimax $d{=}2$ & 47.3          & $[42.9,\,51.8]$ \\
-Aleatorio       & 20.8          & $[17.4,\,24.7]$ \\
-\bottomrule
-\end{tabular}
-\caption{Torneo de siete agentes (80 batallas por par, lados alternados):
-win-rate global e intervalo de Wilson al 95\%. La Heurística Avanzada es la más
-fuerte; el Genético-6 (seis pesos) queda por debajo del Genético-4 (cuatro), y su
-enfrentamiento directo es un empate ($50$--$50$). Duración media: 11.7 turnos;
-empates: 0\%.}
-\label{tab:torneo}
-\end{table}
+emparejamiento y lados alternados. La Figura~\ref{fig:torneo} reporta el win-rate
+global de cada agente con su intervalo de Wilson al 95\% (480 batallas por
+agente): encabeza la \textbf{Heurística Avanzada} ($61.5\%$, IC $[57.0,65.7]$),
+seguida de la Mejorada ($57.9\%$), la Básica ($56.2\%$), el Genético-4 ($54.4\%$),
+el Genético-6 ($51.9\%$) y el Minimax-$d2$ ($47.3\%$); el Aleatorio es el más débil
+($20.8\%$, IC $[17.4,24.7]$). El enfrentamiento directo Genético-4 vs.\ Genético-6
+es un empate ($50$--$50$); la duración media es $11.7$ turnos y no hay empates.
 
 \begin{figure}[t]
 \centering
@@ -410,26 +391,10 @@ mejor. La ponemos a prueba: entrenamos el genético con su \emph{fitness} medido
 Básica + Avanzada), y medimos su win-rate frente a cuatro rivales, incluido
 Minimax-$d2$ ---\textbf{no visto} por ninguna de las dos configuraciones. Para que
 el resultado no dependa de una semilla afortunada, promediamos \textbf{5 semillas}
-independientes (Tabla~\ref{tab:panel}, Figura~\ref{fig:panel}).
-
-\begin{table}[t]
-\centering\small
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
-\toprule
-Fitness vs.\ & Random & Básica & Avanzada & \textbf{Minimax-$d2$} \\
-\midrule
-1 rival (Básica) & 79.3 & 50.7 & 38.0 & \textbf{59.7} \\
-Panel (R+B+A)    & 80.0 & 47.7 & 38.7 & \textbf{55.0} \\
-\bottomrule
-\end{tabular}}
-\caption{Generalización del genético según su \emph{fitness} de entrenamiento:
-win-rate medio (\%) sobre 5 semillas (60 batallas por rival y semilla). Contra el
-rival \textbf{no visto} (Minimax-$d2$) el panel \emph{no} mejora ---de hecho rinde
-algo peor y con más varianza ($55.0\pm8.2$ vs.\ $59.7\pm3.2$)--- y globalmente
-ambos empatan ($55.3\%$ vs.\ $56.9\%$).}
-\label{tab:panel}
-\end{table}
+independientes (Figura~\ref{fig:panel}). Contra el rival \textbf{no visto}
+(Minimax-$d2$) el panel \emph{no} mejora ---de hecho rinde algo peor y con más
+varianza ($55.0\pm8.2$ vs.\ $59.7\pm3.2$)--- y globalmente ambos empatan
+($55.3\%$ vs.\ $56.9\%$); por rival, las dos configuraciones son indistinguibles.
 
 \begin{figure}[t]
 \centering
@@ -502,41 +467,23 @@ diluyendo justo la señal que más predice la victoria.
 
 \paragraph{Una evaluación más rica no rompe el techo.} A un solo nivel, la
 Heurística Mejorada (6 componentes) no mejora a la Avanzada (4): $58\%$ vs.\
-$63.3\%$ contra la Básica, $82\%$ vs.\ $87.3\%$ contra el azar y un empate técnico
-en enfrentamiento directo ($45.3\%$), a un coste $\sim 3\times$ por decisión
-(Tabla~\ref{tab:avzmej}). Y \emph{dentro} del minimax con genético tampoco: el
-Genético-6 no supera al Genético-4 (Experimento~A, Tabla~\ref{tab:torneo}). De
-hecho, el propio algoritmo genético \textbf{anula} el componente \emph{peligro de
-ser noqueado} (peso evolucionado $0.002$): la evolución ``descubre'' que ese
-componente \emph{duplica} una señal ---la táctica de un turno--- que el minimax
-\emph{ya} resuelve al simular el intercambio. El cuello de botella es, por tanto,
-la \emph{simplicidad del dominio} (daño dominado por el HP, sin estados de
-alteración), no la evaluación ni el optimizador: una buena función de evaluación
-debe \emph{complementar} la búsqueda, no \emph{duplicar} la táctica que el árbol ya
-calcula.
-
-\begin{table}[t]
-\centering\small
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lcccc}
-\toprule
- & vs Bás. & vs Rand & H2H & ms/dec. \\
-\midrule
-H.\ Avanzada (4) & 63.3 & 87.3 & ---  & \textbf{0.12} \\
-H.\ Mejorada (6) & 58.0 & 82.0 & 45.3 & 0.40 \\
-\bottomrule
-\end{tabular}}
-\caption{Heurística Avanzada (4) vs.\ Mejorada (6) a un solo nivel ($150$ batallas,
-mismos escenarios). La evaluación más rica no mejora el win-rate de forma
-apreciable (enfrentamiento directo $45.3\%$, dentro del ruido) y cuesta
-$\sim 3\times$ por decisión.}
-\label{tab:avzmej}
-\end{table}
+$63.3\%$ contra la Básica y $82\%$ vs.\ $87.3\%$ contra el azar, con un empate
+técnico en enfrentamiento directo ($45.3\%$, dentro del ruido) y a un coste
+$\sim 3\times$ por decisión ($0.40$ vs.\ $0.12$\,ms). Y \emph{dentro} del minimax
+con genético tampoco: el Genético-6 no supera al Genético-4 (Experimento~A,
+Figura~\ref{fig:torneo}). De hecho, el propio algoritmo genético \textbf{anula} el
+componente \emph{peligro de ser noqueado} (peso evolucionado $0.002$): la evolución
+``descubre'' que ese componente \emph{duplica} una señal ---la táctica de un
+turno--- que el minimax \emph{ya} resuelve al simular el intercambio. El cuello de
+botella es, por tanto, la \emph{simplicidad del dominio} (daño dominado por el HP,
+sin estados de alteración), no la evaluación ni el optimizador: una buena función
+de evaluación debe \emph{complementar} la búsqueda, no \emph{duplicar} la táctica
+que el árbol ya calcula.
 
 \section{Resultados y Discusión}
 
-\paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo},
-Figura~\ref{fig:torneo}) sitúa al agente aleatorio como el más débil con claridad
+\paragraph{Jerarquía de agentes.} El torneo (Figura~\ref{fig:torneo}) sitúa al
+agente aleatorio como el más débil con claridad
 ($20.8\%$ global, IC $[17.4,24.7]$): cualquier forma de evaluación lo supera. En
 el otro extremo, la \textbf{Heurística Avanzada es el mejor agente} ($61.5\%$, IC
 $[57.0,65.7]$). El grupo intermedio ---Mejorada ($57.9\%$), Básica ($56.2\%$),
@@ -565,7 +512,7 @@ mejora con éxito los pesos del minimax (de los manuales a, p.\,ej.,
 $(0.26,0.33,0.33,0.08)$, triplicando el peso de la ventaja de tipo). Sin embargo,
 diversificar la señal de aptitud \emph{no} ayuda: entrenar el \emph{fitness}
 contra un panel de rivales no generaliza mejor al rival no visto que entrenar
-contra uno solo (Experimento~D, Tabla~\ref{tab:panel}) ---un resultado nulo que
+contra uno solo (Experimento~D, Figura~\ref{fig:panel}) ---un resultado nulo que
 solo se aprecia promediando varias semillas y que es coherente con el límite del
 dominio que describimos a continuación.
 
@@ -573,8 +520,8 @@ dominio que describimos a continuación.
 \textbf{techo de $\sim$64\%} frente al panel (Tabla~\ref{tab:techo},
 Figura~\ref{fig:techo}): lo alcanza un vector que pondera \emph{solo} el HP de
 equipo, y ni los pesos evolucionados ni una evaluación más rica de seis
-componentes lo superan ---esta última ni a un nivel (Tabla~\ref{tab:avzmej}) ni
-dentro del minimax con genético (Genético-6). El cuello de botella no es, por
+componentes lo superan ---esta última ni a un solo nivel ni dentro del minimax
+con genético (Genético-6). El cuello de botella no es, por
 tanto, la función de evaluación ni el optimizador, sino la \emph{simplicidad del
 propio combate}: con un daño dominado por el diferencial de HP y sin estados de
 alteración, la mejor política es sencilla y todos los agentes informados convergen
@@ -612,7 +559,7 @@ acota lo que ese aprendizaje puede lograr. Diversificar la señal de aptitud
 generalización (un resultado nulo que solo emerge al promediar varias semillas), y
 dejar que el genético optimice una evaluación \emph{más rica} de seis componentes
 en lugar de cuatro tampoco ayudó: el Genético-6 quedó por debajo del Genético-4
-(Tabla~\ref{tab:torneo}) y la propia evolución llegó a anular los componentes
+(Figura~\ref{fig:torneo}) y la propia evolución llegó a anular los componentes
 tácticos que la búsqueda ya cubre. Todo apunta a un \textbf{techo estructural}
 ($\sim$64\%) propio del dominio: con un daño dominado por el HP y sin estados de
 alteración, el combate admite una política óptima sencilla a la que todos los
