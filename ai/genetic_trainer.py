@@ -27,20 +27,21 @@ def default_opponent_panel() -> list:
     return [RandomAgent, HeuristicBasicAgent, HeuristicAdvancedAgent]
 
 _DATA_DIR = "data"
-_N_WEIGHTS = 4
+_N_WEIGHTS = 4   # longitud por defecto (evaluación Avanzada de MinimaxAgent)
 
 
-# ── Operadores genéticos ──────────────────────────────────────────────────────
+# ── Operadores genéticos (longitud de vector arbitraria) ─────────────────────
 
 def _normalize(weights: list[float]) -> list[float]:
+    n     = len(weights)
     total = sum(weights)
     if total <= 0:
-        return [1 / _N_WEIGHTS] * _N_WEIGHTS
+        return [1 / n] * n
     return [max(0.0, w / total) for w in weights]
 
 
-def _random_individual() -> list[float]:
-    return _normalize([random.random() for _ in range(_N_WEIGHTS)])
+def _random_individual(n: int = _N_WEIGHTS) -> list[float]:
+    return _normalize([random.random() for _ in range(n)])
 
 
 def _make_scenarios(all_ids: list[int], n: int, n_opp: int = 1) -> list[tuple]:
@@ -67,7 +68,8 @@ def _team_strength(team: list) -> float:
 
 def _evaluate(weights: list[float], all_moves: dict, depth: int,
               scenarios: list[tuple], opponents: list,
-              should_stop=None, battle_cb=None) -> tuple[float, float]:
+              should_stop=None, battle_cb=None,
+              agent_class=None) -> tuple[float, float]:
     """Mide unos pesos jugando exactamente los 'scenarios' dados (equipos y
     semilla fijos) contra el panel de 'opponents' (factories). Devuelve:
 
@@ -81,7 +83,8 @@ def _evaluate(weights: list[float], all_moves: dict, depth: int,
 
     should_stop : si devuelve True, corta entre batallas (cancelación granular).
     battle_cb   : se llama tras cada batalla jugada (para reportar progreso fino)."""
-    agent      = MinimaxAgent(depth=depth, weights=weights)
+    cls        = agent_class if agent_class is not None else MinimaxAgent
+    agent      = cls(depth=depth, weights=weights)
     wins       = 0
     played     = 0
     reward_sum = 0.0
@@ -115,14 +118,14 @@ def _tournament(population: list, fitnesses: list[float], k: int = 3) -> list[fl
 
 def _crossover(p1: list[float], p2: list[float]) -> list[float]:
     """Crossover uniforme: cada gen se hereda aleatoriamente de uno de los padres."""
-    child = [p1[i] if random.random() < 0.5 else p2[i] for i in range(_N_WEIGHTS)]
+    child = [p1[i] if random.random() < 0.5 else p2[i] for i in range(len(p1))]
     return _normalize(child)
 
 
 def _mutate(individual: list[float], rate: float, strength: float) -> list[float]:
     """Mutación gaussiana: cada gen se perturba con probabilidad 'rate'."""
     result = individual[:]
-    for i in range(_N_WEIGHTS):
+    for i in range(len(result)):
         if random.random() < rate:
             result[i] += random.gauss(0, strength)
             result[i]  = max(0.0, result[i])
@@ -144,7 +147,9 @@ def run_genetic(pop_size: int = 12,
                 opponent_factories=None,
                 callback=None,
                 should_stop=None,
-                progress_cb=None) -> dict:
+                progress_cb=None,
+                agent_class=None,
+                n_weights: int | None = None) -> dict:
     """
     Ejecuta el algoritmo genético completo sobre Minimax.
 
@@ -181,6 +186,13 @@ def run_genetic(pop_size: int = 12,
     progress_cb       : callable opcional para progreso fino, llamado tras cada
                         batalla con (battles_done, total_battles, gen, generations,
                         best_global_fit)
+    agent_class       : clase del agente que recibe los pesos evolucionados
+                        (constructor (depth, weights)). Por defecto MinimaxAgent
+                        (evaluación Avanzada de 4 pesos). Pasar
+                        MinimaxImprovedAgent para evolucionar la evaluación
+                        Mejorada de 6 componentes.
+    n_weights         : longitud del vector de pesos de cada individuo. Por
+                        defecto 4 (o 6 si agent_class es MinimaxImprovedAgent).
 
     Returns
     -------
@@ -188,6 +200,14 @@ def run_genetic(pop_size: int = 12,
     """
     all_moves = load_moves()
     all_ids   = [p["id"] for p in load_all_pokemon()]
+
+    # Clase de agente y longitud del genotipo. Si no se especifica n_weights se
+    # infiere de los pesos por defecto de la clase (4 para MinimaxAgent,
+    # 6 para MinimaxImprovedAgent).
+    if agent_class is None:
+        agent_class = MinimaxAgent
+    if n_weights is None:
+        n_weights = len(agent_class(depth=1).weights)
 
     # Panel de rivales para el fitness. Por defecto solo HeuristicaBasica; pasar
     # varias factories entrena contra un panel (reduce el sobreajuste a un rival).
@@ -206,7 +226,7 @@ def run_genetic(pop_size: int = 12,
     scenarios = _make_scenarios(all_ids, battles_per_eval, n_opp)
 
     # Inicialización: población aleatoria
-    population = [_random_individual() for _ in range(pop_size)]
+    population = [_random_individual(n_weights) for _ in range(pop_size)]
 
     best_weights = None
     best_score   = -1.0     # fitness continuo del mejor (señal de SELECCIÓN)
@@ -235,7 +255,8 @@ def run_genetic(pop_size: int = 12,
 
             wr, score = _evaluate(w, all_moves, eval_depth, scenarios,
                                   opponent_factories,
-                                  should_stop=should_stop, battle_cb=_battle_cb)
+                                  should_stop=should_stop, battle_cb=_battle_cb,
+                                  agent_class=agent_class)
             scores.append(score)
             winrates.append(wr)
 
@@ -279,7 +300,7 @@ def run_genetic(pop_size: int = 12,
         #       mantener diversidad y escapar de óptimos locales (anti
         #       convergencia prematura). Los élites garantizan no perder al mejor.
         for _ in range(min(immigrants, max(0, pop_size - len(new_pop)))):
-            new_pop.append(_random_individual())
+            new_pop.append(_random_individual(n_weights))
 
         # ── 4. Reproducción por TRUNCAMIENTO: solo el mejor `truncation` de la
         #       población es elegible como padre (presión fuerte hacia los buenos);
@@ -304,6 +325,9 @@ def run_genetic(pop_size: int = 12,
 
     return {
         "weights":           best_weights,
+        "n_weights":         n_weights,
+        "evaluation":        "mejorada-6" if n_weights == 6 else "avanzada-4",
+        "agent_class":       agent_class.__name__,
         "fitness":           round(best_score, 4),    # fitness continuo (lo que sube en la gráfica)
         "win_rate":          round(best_winrate, 4),  # win-rate del mejor (referencia)
         "generations":       actual_gens or generations,
@@ -327,6 +351,8 @@ def save_genetic_weights(data: dict) -> str:
     os.makedirs(_DATA_DIR, exist_ok=True)
     depth = data.get("minimax_depth", 2)
     tag   = f"g{data['generations']}_p{data['pop_size']}_d{depth}"
+    if data.get("n_weights", 4) == 6:
+        tag = f"improved_{tag}"
     path  = os.path.join(_DATA_DIR, f"genetic_{tag}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
