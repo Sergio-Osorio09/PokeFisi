@@ -51,6 +51,12 @@ del genético ---desacople de la profundidad de entrenamiento, \emph{fitness}
 continuo y diversidad por inmigración--- lo estabilizan y aceleran, pero revelan
 un \textbf{techo de rendimiento estructural} del dominio antes que de los
 algoritmos: ni una evaluación más rica ni un optimizador más agresivo lo superan.
+Un experimento adicional lo confirma desde el ángulo opuesto: cuando el genético
+optimiza una evaluación de \emph{seis} componentes en lugar de cuatro, no
+mejora ---rinde incluso algo peor--- y la propia evolución llega a anular los
+componentes redundantes con la búsqueda, evidencia de que una buena evaluación
+debe \emph{complementar} la búsqueda y no \emph{duplicar} la táctica que el árbol
+ya calcula.
 \end{abstract}
 
 \section{Introducción}
@@ -259,6 +265,16 @@ que el minimax usa en las hojas.
 \State \Return mejor individuo global
 \end{algorithmic}
 \end{algorithm}
+
+\paragraph{5b. Genético sobre la evaluación mejorada.} El mismo ciclo evolutivo
+puede optimizar los \emph{seis} pesos de la heurística mejorada
+(agente~3b: amenaza de KO, peligro de ser noqueado y cobertura de equipo, además
+de supervivencia, HP y velocidad) en lugar de los
+cuatro de la avanzada; basta sustituir la función de evaluación de las hojas del
+minimax. Llamamos \textbf{Genético-6} al agente resultante y \textbf{Genético-4}
+al original de cuatro pesos. Comparar ambos con \emph{idéntica} receta de
+entrenamiento aísla el efecto de la \emph{riqueza de la evaluación} sobre el
+aprendizaje evolutivo, que estudiamos en la Sección~\ref{sec:genetico6}.
 
 \subsection{Implementación}
 
@@ -554,6 +570,102 @@ directo $45\%$, dentro del ruido) y cuesta $\sim$4$\times$ por decisión.}
 \label{tab:avzmej}
 \end{table}
 
+\subsection{Experimento F: el genético sobre la evaluación mejorada}
+\label{sec:genetico6}
+Los resultados anteriores muestran que una evaluación de seis componentes no
+mejora a la de cuatro \emph{a un solo nivel} (Tabla~\ref{tab:avzmej}). Cabe
+preguntar si, al dejar que el algoritmo genético \emph{optimice} esos seis pesos
+dentro del minimax, su mayor expresividad sí rinde. Para responderlo entrenamos
+dos genéticos con \textbf{receta idéntica} ---población $N{=}16$, $G{=}15$
+generaciones, $K{=}24$ batallas por evaluación, panel de rivales, misma semilla y
+los mismos escenarios (\emph{Common Random Numbers})---: el \textbf{Genético-4}
+sobre la evaluación avanzada (cuatro pesos) y el \textbf{Genético-6} sobre la
+mejorada (seis). Ambos alcanzan el mismo \emph{fitness} de entrenamiento
+($75.0\%$), pero entrenar el de seis pesos cuesta $1.8\times$ más y, en juego,
+evaluar seis componentes cuesta $\sim 3\times$ por decisión ($30.7$ frente a
+$10.0$\,ms en $d{=}2$).
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Agente} & \textbf{Glob.}\ (\%) & \textbf{IC 95\%} \\
+\midrule
+H.\ Avanzada    & \textbf{61.5} & $[57.0,\,65.7]$ \\
+H.\ Mejorada    & 57.9          & $[53.5,\,62.3]$ \\
+H.\ Básica      & 56.2          & $[51.8,\,60.6]$ \\
+Genético-4      & 54.4          & $[49.9,\,58.8]$ \\
+Genético-6      & 51.9          & $[47.4,\,56.3]$ \\
+Minimax $d{=}2$ & 47.3          & $[42.9,\,51.8]$ \\
+Aleatorio       & 20.8          & $[17.4,\,24.7]$ \\
+\bottomrule
+\end{tabular}
+\caption{Torneo todos contra todos de \emph{siete} agentes (80 batallas por par,
+lados alternados): win-rate global e intervalo de Wilson al 95\%. El Genético-6
+(evaluación de seis pesos) queda \emph{por debajo} del Genético-4 (cuatro pesos);
+su enfrentamiento directo es un empate técnico ($50$--$50$). Duración media
+$11.7$ turnos; empates $0\%$.}
+\label{tab:torneo6}
+\end{table}
+
+El torneo de siete agentes (Tabla~\ref{tab:torneo6}, Figura~\ref{fig:torneo6})
+responde que no: el Genético-6 rinde $51.9\%$ frente al $54.4\%$ del Genético-4,
+y su enfrentamiento directo es un empate ($50$--$50$). La Tabla~\ref{tab:techo6}
+lo explica midiendo, sobre los mismos $150$ escenarios, el techo de cada familia
+de pesos: la mejor configuración de seis pesos ($54\%$) queda $\sim 10$ puntos
+por debajo del techo de cuatro ($64\%$, que alcanza un vector que solo pondera el
+HP de equipo). El dato más revelador es que ``solo HP'' con seis componentes
+rinde mucho peor ($46.7\%$) que con cuatro ($64\%$): la diferencia está en que el
+término de HP de la evaluación mejorada pondera un $70\%$ el HP del Pokémon
+\emph{activo} ---volátil--- y solo un $30\%$ el del equipo, diluyendo justo la
+señal que más predice la victoria.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\columnwidth]{v2/figs/expA_torneo.pdf}
+\caption{Win-rate global de los siete agentes con IC 95\% (Experimento~F). El
+Genético-6 no supera al Genético-4 y la Heurística Avanzada sigue siendo el
+agente más fuerte. Datos de una ejecución real del sistema.}
+\label{fig:torneo6}
+\end{figure}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lcc}
+\toprule
+Pesos & vs panel ($d{=}1$) & vs panel ($d{=}2$) \\
+\midrule
+Por defecto (4)           & 54.0          & 54.7 \\
+Genético-4 (evolucionado) & 59.3          & 56.0 \\
+Solo HP (4)               & \textbf{64.0} & \textbf{64.0} \\
+\midrule
+Por defecto (6)           & 48.7          & 54.0 \\
+Genético-6 (evolucionado) & 54.0          & 51.3 \\
+Solo HP (6)               & 46.7          & 49.3 \\
+\bottomrule
+\end{tabular}
+\caption{Techo de la evaluación, cuatro frente a seis pesos: win-rate (\%) contra
+el panel en $150$ escenarios comunes a profundidades $1$ y $2$. Ninguna
+configuración de seis pesos alcanza el techo de $64\%$ de la de cuatro, y
+``solo HP'' se desploma con seis componentes ($46.7\%$) porque su término de HP
+prioriza el activo sobre el equipo.}
+\label{tab:techo6}
+\end{table}
+
+\paragraph{¿Por qué no ayuda una evaluación más rica?} Confluyen dos causas.
+Primero, \textbf{doble contabilidad táctica}: la \emph{amenaza de KO} y el
+\emph{peligro de ser noqueado} son señales de un turno que el minimax \emph{ya}
+resuelve al simular el intercambio; computarlas también en la hoja cuenta dos
+veces la táctica inmediata y diluye la señal estratégica de largo plazo. De
+hecho, el propio algoritmo genético \textbf{anula} el peligro de ser noqueado
+(su peso evolucionado es $0.002$): la evolución ``descubre'' que ese componente
+estorba. Segundo, el término de HP de la evaluación mejorada está mal orientado
+hacia el Pokémon activo. El resultado refuerza la conclusión de la
+Sección~\ref{sec:refinamiento}: el cuello de botella es la \emph{simplicidad del
+dominio}, no la evaluación ni el optimizador; una buena función de evaluación
+debe \emph{complementar} la búsqueda ---aportar valor estratégico--- y no
+\emph{duplicar} la táctica que el árbol ya calcula.
+
 \section{Resultados y Discusión}
 
 \paragraph{Jerarquía de agentes.} El torneo (Tabla~\ref{tab:torneo}) sitúa al
@@ -673,7 +785,13 @@ entrenamiento, pero revelan un \textbf{techo estructural} ($\sim$64\%) propio de
 dominio: ni una evaluación más rica ni una selección más agresiva lo superan,
 porque el combate ---con daño dominado por el HP y sin estados de alteración---
 admite una política óptima sencilla a la que todos los agentes informados se
-aproximan.
+aproximan. Un último experimento lo confirma desde el ángulo opuesto
+(Sección~\ref{sec:genetico6}): dejar que el genético optimice una evaluación de
+\emph{seis} componentes en lugar de cuatro no mejora su rendimiento ---el
+Genético-6 queda por debajo del Genético-4 (Tabla~\ref{tab:torneo6})--- y la
+propia evolución anula los componentes tácticos que la búsqueda ya cubre. La
+lección es general: una evaluación útil debe \emph{complementar} a la búsqueda,
+no \emph{duplicarla}.
 
 Como trabajo futuro proponemos profundizar estas variantes: resolver los nodos
 como juegos de matriz con equilibrios de estrategia \emph{mixta} (en lugar del
