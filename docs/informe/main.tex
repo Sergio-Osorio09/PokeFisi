@@ -30,60 +30,58 @@
 
 \begin{abstract}
 Presentamos \textbf{PokeFisi}, un simulador de combates Pokémon 3 contra 3 por
-turnos diseñado para estudiar y comparar agentes de toma de decisiones en un
-entorno adversario con información completa. Implementamos una familia de
-agentes de dificultad creciente: un agente \emph{aleatorio}, una
-\emph{heurística básica}, una \emph{heurística avanzada} (y una variante
-\emph{mejorada} de seis componentes), un agente \emph{minimax con poda
-alfa-beta} y un \emph{algoritmo genético} que optimiza la función de evaluación
-del minimax. El trabajo describe el modelado del dominio (estados, daño, tipos
-y dinámica de turnos) y la formulación de cada algoritmo. Mediante cinco
-experimentos sistemáticos medimos: la jerarquía de los agentes en un torneo todos
-contra todos (con intervalos de confianza de Wilson); el coste de la búsqueda con
-y sin poda alfa-beta y el efecto de la profundidad sobre la calidad de juego; si
-diversificar el entrenamiento del genético mejora su generalización; y el techo de
-la función de evaluación, comparando cuatro frente a seis componentes. Los
-resultados muestran que la poda alfa-beta reduce los nodos explorados hasta un
-$81\%$ sin alterar la decisión, que una heurística avanzada bien calibrada resulta
-el agente más fuerte ---por encima del minimax--- y que mirar más turnos no mejora
-el win-rate. Sobre el aprendizaje evolutivo encontramos dos resultados nulos
-reveladores: ni diversificar la señal de aptitud mejora la generalización, ni una
-evaluación más rica de seis componentes supera a la de cuatro (el propio genético
-llega a anular los componentes redundantes con la búsqueda). Todo apunta a un
-\textbf{techo de rendimiento estructural} del dominio antes que de los algoritmos:
-una buena evaluación debe \emph{complementar} la búsqueda y no \emph{duplicar} la
-táctica que el árbol ya calcula.
+turnos que usamos como banco de pruebas para comparar agentes de decisión en un
+entorno adversario de información completa. Sobre un mismo motor implementamos
+agentes de dificultad creciente: desde uno aleatorio y una heurística básica hasta
+una heurística avanzada (con una variante mejorada de seis componentes), un
+minimax con poda alfa-beta y un algoritmo genético que aprende los pesos de la
+evaluación del minimax. Tras describir el modelado del dominio y la formulación de
+cada algoritmo, los sometemos a cinco experimentos. Medimos la jerarquía de los
+agentes en un torneo todos contra todos, el coste de la búsqueda con y sin poda,
+el efecto de la profundidad sobre la calidad de juego, si diversificar el
+entrenamiento del genético ayuda a generalizar y, por último, hasta dónde llega la
+función de evaluación al pasar de cuatro a seis componentes. Los números cuentan
+una historia bastante nítida. La poda alfa-beta recorta hasta el $81\%$ de los
+nodos sin cambiar una sola decisión; una heurística avanzada bien calibrada acaba
+siendo el agente más fuerte, por delante del minimax; y anticipar más turnos no se
+traduce en más victorias. En el lado evolutivo aparecen dos resultados nulos que
+resultan más interesantes de lo que prometían: ni diversificar la señal de aptitud
+mejora la generalización, ni una evaluación de seis componentes supera a la de
+cuatro. De hecho, el propio genético termina apagando los componentes que la
+búsqueda ya cubre. Todo apunta a un \textbf{techo de rendimiento propio del
+dominio}, no de los algoritmos: una buena evaluación debe complementar a la
+búsqueda, no repetir la táctica que el árbol ya resuelve.
 \end{abstract}
 
 \section{Introducción}
 
-Los juegos por turnos son un banco de pruebas clásico para la inteligencia
-artificial porque combinan un espacio de estados grande, decisiones
-secuenciales y un oponente que también actúa de forma racional
-\citep{shannon1950,russell2020}. Los combates de la saga \emph{Pokémon}
-constituyen un caso particularmente rico: cada entrenador dispone de un equipo
-de criaturas con estadísticas, tipos elementales y movimientos diversos, y en
-cada turno debe decidir entre atacar o cambiar de Pokémon. La interacción de la
-tabla de efectividad de tipos, el orden por velocidad y la gestión del equipo
-genera un árbol de decisión amplio y con fuerte componente táctico.
+Desde hace décadas, los juegos por turnos son un laboratorio recurrente para la
+inteligencia artificial: reúnen un espacio de estados enorme, decisiones que se
+encadenan en el tiempo y un oponente que también razona
+\citep{shannon1950,russell2020}. Los combates de \emph{Pokémon} son un ejemplo
+especialmente jugoso. Cada entrenador maneja un equipo de criaturas con
+estadísticas, tipos y movimientos propios, y en cada turno afronta una disyuntiva
+fácil de enunciar pero difícil de resolver: atacar o cambiar de Pokémon. De la
+tabla de efectividad de tipos, el orden por velocidad y la gestión del banco surge
+un árbol de decisión amplio y con mucha carga táctica.
 
-Este trabajo presenta \textbf{PokeFisi}, un simulador 3 contra 3 desarrollado en
-Python, con motor de combate determinista para simulación e interfaz gráfica
-para visualizar el razonamiento de cada agente. El objetivo es doble:
-(i)~modelar el combate como un problema de búsqueda y decisión, y (ii)~comparar
-empíricamente una familia de agentes que van desde la elección aleatoria hasta
-estrategias informadas por búsqueda adversaria y por aprendizaje evolutivo.
+Sobre esa base construimos \textbf{PokeFisi}, un simulador 3 contra 3 escrito en
+Python. Su motor de combate es determinista cuando los agentes razonan, lo que
+hace reproducibles las simulaciones, y una interfaz gráfica deja ver turno a turno
+qué evalúa cada agente. Buscamos dos cosas: modelar el combate como un problema de
+búsqueda y decisión, y comparar de forma empírica una familia de agentes que va de
+la elección al azar a estrategias guiadas por búsqueda adversaria y por
+aprendizaje evolutivo.
 
-Las contribuciones son las siguientes. Primero, formalizamos el dominio y una
-función de evaluación basada en diferenciales acotados. Segundo, implementamos
-un agente \emph{minimax} con poda alfa-beta \citep{knuth1975} bajo una
-formulación \emph{paranoid} adecuada a la naturaleza simultánea del combate.
-Tercero, desarrollamos un \emph{algoritmo genético} \citep{holland1992,goldberg1989}
-que evoluciona los pesos de la evaluación empleada por el minimax, de modo que
-la búsqueda y el aprendizaje se combinan. Finalmente, evaluamos los agentes en
-torneos todos contra todos, analizamos cómo la profundidad de búsqueda y la poda
-afectan el coste y la calidad, y estudiamos los límites del aprendizaje evolutivo
-y de la propia función de evaluación en este dominio.
+El trabajo aporta cuatro contribuciones. Formalizamos el dominio junto con una
+función de evaluación basada en diferenciales acotados. Implementamos un minimax
+con poda alfa-beta \citep{knuth1975} en una formulación \emph{paranoid}, ajustada
+a la naturaleza simultánea del combate. Sumamos un algoritmo genético
+\citep{holland1992,goldberg1989} que evoluciona los pesos que el minimax usa en
+las hojas, con lo que búsqueda y aprendizaje quedan acoplados. Y, ante todo,
+medimos: enfrentamos a los agentes en torneos, vemos cómo la profundidad y la poda
+afectan al coste y a la calidad, y sondeamos hasta dónde llegan el aprendizaje
+evolutivo y la propia evaluación en este dominio.
 
 \section{Metodología}
 
@@ -114,13 +112,13 @@ d = \Big\lfloor \max(1,\ \tfrac{\text{atk}}{\text{def}}\,p - \text{spe}\cdot K)
 donde $p$ es la potencia del movimiento, $\text{acc}$ su precisión y $K=0.25$
 una constante que penaliza atacar a un rival más veloz.
 
-\paragraph{Dinámica de turno.} En cada turno ambos jugadores eligen una acción
----usar un movimiento o cambiar de Pokémon--- y se ejecutan por orden de
-velocidad (los empates se resuelven al azar). Los Pokémon debilitados se
-reemplazan automáticamente. Para garantizar la terminación en emparejamientos
-donde ningún bando puede causar daño (por inmunidades de tipo), imponemos un
-tope de 200 turnos; de alcanzarse, se decide por número de Pokémon vivos y, en
-caso de empate, por HP total.
+\paragraph{Dinámica de turno.} En cada turno los dos jugadores eligen su acción,
+un movimiento o un cambio, y estas se resuelven por orden de velocidad; cuando hay
+empate de velocidad lo decidimos al azar. Un Pokémon debilitado se reemplaza solo.
+Hay emparejamientos donde ningún bando puede hacer daño por inmunidades de tipo, y
+para que la partida termine de todos modos fijamos un tope de 200 turnos. Si se
+alcanza, gana quien conserve más Pokémon vivos; si también ahí hay empate, decide
+el HP total.
 
 \paragraph{Acciones.} Dado un estado, el conjunto de acciones de un jugador es el
 de sus movimientos disponibles más los cambios a cualquier Pokémon vivo del
@@ -128,54 +126,52 @@ banco.
 
 \subsection{Agentes}
 
-\paragraph{1. Aleatorio.} Sirve como línea base: elige uniformemente entre las
-acciones posibles, sin evaluación alguna. Su desempeño cuantifica la dificultad
-intrínseca del entorno.
+\paragraph{1. Aleatorio.} Es nuestra línea base: escoge una acción con
+probabilidad uniforme y sin evaluar nada. Lo que consiga (o no consiga) mide la
+dificultad intrínseca del entorno.
 
-\paragraph{2. Heurística básica.} Evalúa cada acción a un solo nivel (\emph{1
-ply}): simula la acción y puntúa el estado resultante con la diferencia de salud
-del Pokémon activo,
+\paragraph{2. Heurística básica.} Mira un solo turno por delante (\emph{1 ply}):
+simula cada acción y puntúa el resultado por la diferencia de salud del Pokémon
+activo,
 \(
 f_{\text{bas}}(s)=\text{hp}_{\text{propio}}(s)-\text{hp}_{\text{rival}}(s),
 \)
-eligiendo la de mayor puntuación. Es codiciosa y miope, pero ya supera con
-holgura al azar.
+para quedarse con la mejor. Es codiciosa y de miras cortas, pero con eso le basta
+para superar al azar con holgura.
 
-\paragraph{3. Heurística avanzada.} Generaliza la anterior con una función de
-evaluación que pondera cuatro \emph{diferenciales} acotados en $[-1,1]$, de modo
-que un estado simétrico vale $0$:
+\paragraph{3. Heurística avanzada.} Recoge la idea anterior y la generaliza con una
+evaluación que combina cuatro \emph{diferenciales} acotados en $[-1,1]$, pensada
+para que un estado simétrico valga exactamente $0$:
 \begin{align}
 \label{eq:eval}
 f(s) =\ & w_0\,\Delta_{\text{vivos}} + w_1\,\Delta_{\text{hp}} \nonumber\\
         & + w_2\,\Delta_{\text{tipo}} + w_3\,\Delta_{\text{vel}},
 \end{align}
-donde $\Delta_{\text{vivos}}$ es la diferencia normalizada de Pokémon vivos,
-$\Delta_{\text{hp}}$ la diferencia de HP promedio, $\Delta_{\text{tipo}}$ la
-ventaja de tipo del mejor movimiento disponible y $\Delta_{\text{vel}}$ la
-ventaja de velocidad del activo. Los pesos por defecto, ajustados manualmente,
-son $\mathbf{w}=(0.40,0.35,0.15,0.10)$. Esta misma evaluación se reutiliza en
-los dos agentes siguientes.
+Aquí $\Delta_{\text{vivos}}$ es la diferencia normalizada de Pokémon vivos,
+$\Delta_{\text{hp}}$ la de HP promedio, $\Delta_{\text{tipo}}$ la ventaja de tipo
+del mejor movimiento disponible y $\Delta_{\text{vel}}$ la de velocidad del activo.
+Los pesos por defecto los fijamos a mano en $\mathbf{w}=(0.40,0.35,0.15,0.10)$.
+Esta misma evaluación reaparece en los dos agentes siguientes.
 
-\paragraph{3b. Heurística mejorada.} Como extensión exploramos una variante de
-\emph{seis} componentes que añade nociones tácticas: además de supervivencia,
-HP y velocidad, valora la \emph{amenaza de KO} (si puedo noquear al rival este
-turno), el \emph{peligro de ser noqueado} y la \emph{cobertura de tipos} del
-equipo. Comparte la misma mecánica de decisión a un nivel y se incluye en los
-experimentos como agente adicional.
+\paragraph{3b. Heurística mejorada.} Como extensión probamos una variante de
+\emph{seis} componentes con más olfato táctico. A supervivencia, HP y velocidad les
+sumamos tres señales: la \emph{amenaza de KO} (si este turno puedo noquear al
+rival), el \emph{peligro de ser noqueado} y la \emph{cobertura de tipos} del equipo.
+Decide igual, a un solo nivel, y la incluimos como un agente más en los
+experimentos.
 
-\paragraph{4. Minimax con poda alfa-beta.} Para mirar más allá de un turno
-empleamos búsqueda adversaria. Modelamos el combate ---intrínsecamente
-simultáneo--- mediante una formulación \emph{paranoid} con árbol alternante: en
-los nodos MAX el agente elige su acción para maximizar la
-ecuación~\eqref{eq:eval} y en los nodos MIN el rival elige la suya para
-minimizarla; cuando ambas acciones quedan fijadas se simula el turno completo
-(con prioridad por velocidad y auto-reemplazo) y se desciende un nivel de
-profundidad. Las hojas se valoran con la ecuación~\eqref{eq:eval} y los estados
-terminales con $\pm 1$. La poda alfa-beta \citep{knuth1975} descarta ramas que
-no pueden mejorar la decisión, conservando el mismo resultado que el minimax
-puro pero reduciendo el coste de $O(b^d)$ hacia $O(b^{d/2})$ con un buen orden de
-exploración (Algoritmo~\ref{alg:minimax}). La profundidad $d$ (en turnos) es
-configurable y regula el compromiso entre calidad y tiempo.
+\paragraph{4. Minimax con poda alfa-beta.} Para mirar más allá del turno presente
+recurrimos a la búsqueda adversaria. Como el combate es simultáneo por naturaleza,
+lo modelamos con una formulación \emph{paranoid} sobre un árbol alternante: en los
+nodos MAX el agente busca la acción que maximiza la ecuación~\eqref{eq:eval}, y en
+los MIN el rival busca la que la minimiza. Una vez fijadas ambas, simulamos el
+turno completo, con su prioridad por velocidad y su auto-reemplazo, y bajamos un
+nivel. Las hojas se valoran con la ecuación~\eqref{eq:eval}; los estados terminales
+valen $\pm 1$. La poda alfa-beta \citep{knuth1975} va descartando ramas que ya no
+pueden cambiar la decisión: el resultado es idéntico al del minimax puro, pero con
+un buen orden de exploración el coste baja de $O(b^d)$ hacia $O(b^{d/2})$
+(Algoritmo~\ref{alg:minimax}). La profundidad $d$, en turnos, es el mando con el
+que regulamos calidad frente a tiempo.
 
 \begin{algorithm}[t]
 \caption{Minimax con poda alfa-beta (paranoid)}
@@ -206,24 +202,21 @@ configurable y regula el compromiso entre calidad y tiempo.
 \end{algorithm}
 
 \paragraph{5. Algoritmo genético sobre minimax.} Los pesos $\mathbf{w}$ de la
-ecuación~\eqref{eq:eval} determinan el comportamiento del minimax, pero
-ajustarlos a mano es subóptimo. Proponemos optimizarlos con un algoritmo
+ecuación~\eqref{eq:eval} gobiernan al minimax, y afinarlos a mano deja rendimiento
+sobre la mesa. La alternativa que proponemos es optimizarlos con un algoritmo
 genético \citep{holland1992,goldberg1989}. Cada \emph{individuo} es un vector de
-cuatro pesos normalizados ($\sum w_i=1$); su \emph{aptitud} (\emph{fitness}) es
-la tasa de victorias de un agente $\textsc{Minimax}(d,\mathbf{w})$ en $K$
-batallas contra la heurística básica. Para reducir la varianza del \emph{fitness}
-usamos \emph{Common Random Numbers}: todos los individuos de una generación se
-evalúan contra los \emph{mismos} emparejamientos y semillas, de modo que las
-diferencias de aptitud reflejan los pesos y no la suerte. El \emph{fitness} puede
-medirse contra un único rival o contra un \emph{panel} de rivales; comparamos
-ambas opciones en la Sección~\ref{sec:panel}. El ciclo
-evolutivo
-(Algoritmo~\ref{alg:ga}) combina \emph{selección por torneo} ($k=3$),
-\emph{cruce uniforme}, \emph{mutación gaussiana} ($p_m=0.15$, $\sigma=0.10$) y
-\emph{elitismo} (los $e$ mejores individuos pasan intactos), de modo que la
-mejor solución encontrada nunca se pierde. Así el aprendizaje evolutivo y la
-búsqueda adversaria operan de forma acoplada: el genético afina la evaluación
-que el minimax usa en las hojas.
+cuatro pesos normalizados ($\sum w_i=1$), y su \emph{aptitud} es el win-rate de un
+$\textsc{Minimax}(d,\mathbf{w})$ en $K$ batallas contra la heurística básica. Para
+que ese fitness no dependa de la suerte usamos \emph{Common Random Numbers}: todos
+los individuos de una misma generación juegan contra los mismos emparejamientos y
+semillas, de manera que las diferencias de aptitud reflejan los pesos y no el azar.
+El fitness puede medirse contra un único rival o contra un \emph{panel} de ellos, y
+comparamos las dos opciones en la Sección~\ref{sec:panel}. El ciclo evolutivo
+(Algoritmo~\ref{alg:ga}) encadena selección por torneo ($k=3$), cruce uniforme,
+mutación gaussiana ($p_m=0.15$, $\sigma=0.10$) y elitismo: los $e$ mejores pasan
+intactos, así que nunca perdemos la mejor solución hallada. De este modo
+aprendizaje y búsqueda trabajan acoplados, con el genético puliendo la evaluación
+que el minimax aplica en las hojas.
 
 \begin{algorithm}[t]
 \caption{Algoritmo genético sobre minimax}
@@ -249,51 +242,50 @@ que el minimax usa en las hojas.
 \end{algorithmic}
 \end{algorithm}
 
-\paragraph{5b. Genético sobre la evaluación mejorada.} El mismo ciclo evolutivo
-puede optimizar los \emph{seis} pesos de la heurística mejorada
-(agente~3b: amenaza de KO, peligro de ser noqueado y cobertura de equipo, además
-de supervivencia, HP y velocidad) en lugar de los
-cuatro de la avanzada; basta sustituir la función de evaluación de las hojas del
-minimax. Llamamos \textbf{Genético-6} al agente resultante y \textbf{Genético-4}
-al original de cuatro pesos. Comparar ambos con \emph{idéntica} receta de
-entrenamiento aísla el efecto de la \emph{riqueza de la evaluación} sobre el
-aprendizaje evolutivo, que estudiamos en la Sección~\ref{sec:techo}.
+\paragraph{5b. Genético sobre la evaluación mejorada.} Ese mismo ciclo evolutivo
+puede afinar los \emph{seis} pesos de la heurística mejorada (la del agente~3b:
+amenaza de KO, peligro de ser noqueado y cobertura de equipo, junto a
+supervivencia, HP y velocidad) en vez de los cuatro de la avanzada; solo hay que
+cambiar la función con que el minimax valora las hojas. Al agente resultante lo
+llamamos \textbf{Genético-6}, y \textbf{Genético-4} al de cuatro pesos. Entrenando
+a los dos con la misma receta aislamos una pregunta concreta: ¿importa la riqueza
+de la evaluación para el aprendizaje evolutivo? La respondemos en la
+Sección~\ref{sec:techo}.
 
 \subsection{Implementación}
 
-PokeFisi está escrito en Python con interfaz gráfica en Pygame
-\citep{pygame}. El motor de combate separa la lógica determinista de
-simulación (usada por los agentes para razonar) de la ejecución real con azar.
-Una optimización clave fue sustituir la copia profunda del estado por un clon
-ligero que comparte los datos inmutables (tipos, movimientos, estadísticas) y
-solo duplica el HP y los índices de activo, lo que aceleró la búsqueda minimax
-en torno a un orden de magnitud y volvió viable el algoritmo genético sobre
-minimax. La búsqueda del minimax es \emph{determinista} (los empates de
-velocidad se resuelven de forma fija dentro del árbol; el azar real ocurre solo
-en la batalla), de modo que un mismo estado siempre produce la misma decisión.
-La interfaz muestra además, en tiempo real, el ``razonamiento'' de cada agente:
-las acciones evaluadas, su puntuación y, para el minimax, el número de nodos
-explorados y de podas realizadas.
+PokeFisi está escrito en Python, con la interfaz en Pygame \citep{pygame}. El motor
+mantiene separadas dos cosas: la lógica determinista que usan los agentes para
+razonar y la ejecución real, que sí incorpora azar. La optimización que más nos
+cundió fue sustituir la copia profunda del estado por un clon ligero, que comparte
+los datos inmutables (tipos, movimientos, estadísticas) y solo duplica el HP y los
+índices del activo; con eso la búsqueda minimax se aceleró casi un orden de
+magnitud, y fue justo lo que volvió viable el genético sobre minimax. Dentro del
+árbol la búsqueda es determinista (los empates de velocidad se rompen de forma
+fija y el azar real queda reservado a la batalla), así que un mismo estado siempre
+produce la misma decisión. La interfaz, por su parte, muestra en vivo el
+``razonamiento'' de cada agente: qué acciones evalúa, con qué puntuación y, en el
+minimax, cuántos nodos explora y cuántas podas hace.
 
 \section{Experimentos}
 
-Evaluamos los agentes en cinco experimentos. Salvo indicación
-contraria, cada batalla usa equipos de tres Pokémon muestreados al azar del
-\emph{roster} y, para eliminar el sesgo de actuar primero, en los duelos cada
-agente juega como Jugador~1 en la mitad de las partidas y como Jugador~2 en la
-otra mitad. Reportamos la tasa de victorias con su \textbf{intervalo de
-confianza de Wilson al 95\%}, la \textbf{duración de las partidas} (turnos
-promedio) y la \textbf{tasa de empates} (partidas que alcanzan el tope de
-turnos sin un ganador claro). Todas las cifras provienen de ejecuciones reales
-del sistema.
+Sometemos a los agentes a cinco experimentos. Salvo que digamos lo contrario, cada
+batalla parte de equipos de tres Pokémon tomados al azar del \emph{roster}, y para
+neutralizar la ventaja de mover primero cada agente juega de Jugador~1 en la mitad
+de las partidas y de Jugador~2 en la otra mitad. De cada enfrentamiento reportamos
+el win-rate con su \textbf{intervalo de Wilson al 95\%}, la \textbf{duración media}
+en turnos y la \textbf{tasa de empates} (partidas que tocan el tope de turnos sin
+un ganador claro). Ningún número está puesto a ojo: todos salen de ejecuciones
+reales del sistema.
 
 \subsection{Experimento A: torneo todos contra todos}
 \label{sec:torneo}
-Enfrentamos los \emph{siete} agentes ---Aleatorio, Heurística Básica, Heurística
-Avanzada, Heurística Mejorada, Minimax ($d{=}2$), Genético-4 (minimax con cuatro
-pesos evolucionados) y Genético-6 (minimax con la evaluación mejorada de seis
-pesos evolucionados)--- en un torneo todos contra todos, con 80 batallas por
-emparejamiento y lados alternados. La Figura~\ref{fig:torneo} reporta el win-rate
+Hacemos jugar a los \emph{siete} agentes en un torneo todos contra todos, con 80
+batallas por emparejamiento y lados alternados. Compiten el Aleatorio, las
+heurísticas Básica, Avanzada y Mejorada, el Minimax ($d{=}2$) y los dos genéticos:
+el Genético-4 (minimax con cuatro pesos evolucionados) y el Genético-6 (con la
+evaluación mejorada de seis pesos evolucionados). La Figura~\ref{fig:torneo}
+reporta el win-rate
 global de cada agente con su intervalo de Wilson al 95\% (480 batallas por
 agente): encabeza la \textbf{Heurística Avanzada} ($61.5\%$, IC $[57.0,65.7]$),
 seguida de la Mejorada ($57.9\%$), la Básica ($56.2\%$), el Genético-4 ($54.4\%$),
@@ -366,8 +358,8 @@ Turnos por partida     & 10.2 & 10.8 & 10.4 \\
 \end{tabular}}
 \caption{Win-rate del minimax frente a la Heurística Básica según la profundidad
 (80 batallas por configuración). Los intervalos de confianza se solapan
-ampliamente y abarcan el $50\%$: aumentar la profundidad \emph{no} mejora el
-win-rate ---si acaso lo reduce levemente--- en este dominio.}
+ampliamente y abarcan el $50\%$: en este dominio, aumentar la profundidad no mejora
+el win-rate, y si acaso lo reduce un poco.}
 \label{tab:depthwin}
 \end{table}
 
@@ -375,26 +367,26 @@ win-rate ---si acaso lo reduce levemente--- en este dominio.}
 \centering
 \includegraphics[width=0.8\columnwidth]{figs/figC_profundidad.pdf}
 \caption{Win-rate del minimax frente a la Heurística Básica según la profundidad,
-con IC 95\%. Más búsqueda no compra más victorias: la tendencia es plana ---incluso
-ligeramente descendente--- y los intervalos se solapan con el $50\%$. Lo atribuimos
-a la formulación \emph{paranoid} (sobre-defensiva) y a lo cortas que son las
-partidas (${\sim}10$ turnos).}
+con IC 95\%. Más búsqueda no compra más victorias: la tendencia es plana, incluso
+algo descendente, y los intervalos se solapan con el $50\%$. Lo atribuimos a la
+formulación \emph{paranoid}, que juega a la defensiva, y a lo cortas que son las
+partidas (unos $10$ turnos).}
 \label{fig:depth}
 \end{figure}
 
 \subsection{Experimento D: ¿diversificar el entrenamiento del genético ayuda?}
 \label{sec:panel}
-Una intuición habitual del aprendizaje automático es que entrenar contra un único
-rival \emph{sobreajusta} y que un \emph{panel} de rivales diverso generaliza
-mejor. La ponemos a prueba: entrenamos el genético con su \emph{fitness} medido
-(a)~contra un solo rival (la Heurística Básica) y (b)~contra un panel (Aleatorio +
-Básica + Avanzada), y medimos su win-rate frente a cuatro rivales, incluido
-Minimax-$d2$ ---\textbf{no visto} por ninguna de las dos configuraciones. Para que
-el resultado no dependa de una semilla afortunada, promediamos \textbf{5 semillas}
-independientes (Figura~\ref{fig:panel}). Contra el rival \textbf{no visto}
-(Minimax-$d2$) el panel \emph{no} mejora ---de hecho rinde algo peor y con más
-varianza ($55.0\pm8.2$ vs.\ $59.7\pm3.2$)--- y globalmente ambos empatan
-($55.3\%$ vs.\ $56.9\%$); por rival, las dos configuraciones son indistinguibles.
+Hay una intuición muy extendida en aprendizaje automático: entrenar contra un solo
+rival sobreajusta, y un panel de rivales variado generaliza mejor. Quisimos
+comprobarla. Entrenamos el genético midiendo su \emph{fitness} de dos maneras,
+contra un único rival (la Heurística Básica) y contra un panel (Aleatorio, Básica y
+Avanzada), y luego medimos cómo le va contra cuatro oponentes. Entre ellos está el
+Minimax-$d2$, que \textbf{no aparece} en ninguno de los dos entrenamientos y hace,
+por tanto, de prueba de generalización. Para no quedar a merced de una semilla
+afortunada, promediamos \textbf{5 semillas} independientes (Figura~\ref{fig:panel}).
+El veredicto es sobrio: contra el rival no visto el panel no mejora; rinde incluso
+un poco peor y con más dispersión ($55.0\pm8.2$ frente a $59.7\pm3.2$), y en el
+global los dos empatan ($55.3\%$ frente a $56.9\%$). Por rival, son indistinguibles.
 
 \begin{figure}[t]
 \centering
@@ -406,25 +398,26 @@ aporta ventaja en este dominio.}
 \label{fig:panel}
 \end{figure}
 
-\paragraph{Un resultado nulo revelador.} Contra la intuición, \textbf{el panel no
-generaliza mejor}: las dos configuraciones son estadísticamente indistinguibles
-frente a todos los rivales, incluido el no visto. Es un resultado nulo ---pero
-informativo---, coherente con el techo estructural del Experimento~E: el combate
-es tan simple que todos los genéticos informados convergen cerca de la misma
-política, sin importar la diversidad del entrenamiento, de modo que apenas hay
-margen para que el sobreajuste se manifieste. (Una corrida aislada puede sugerir
-un efecto fuerte por azar; solo el promedio sobre varias semillas lo desmiente
----una lección metodológica en sí misma.)
+\paragraph{Un resultado nulo revelador.} Al final, y contra lo que esperábamos, el
+panel \textbf{no generaliza mejor}: las dos configuraciones rinden prácticamente
+igual frente a todos los rivales, también frente al que no vieron. Es un resultado
+nulo, sí, pero de los que enseñan. Encaja con el techo estructural que veremos en el
+Experimento~E: el combate es tan simple que cualquier genético informado termina
+aterrizando en una política parecida, da igual con quién lo entrenes, y eso deja muy
+poco espacio para que el sobreajuste asome. Conviene recordar, de paso, que una sola
+corrida puede aparentar un efecto que se evapora al promediar semillas; ahí hay una
+lección de método tan útil como el propio resultado.
 
 \subsection{Experimento E: techo de la evaluación}
 \label{sec:techo}
-El experimento culminante pregunta hasta dónde puede llegar la función de
-evaluación, y si una más rica (seis componentes) supera a la de cuatro. Medimos
-el win-rate frente al panel (Aleatorio, Básica, Avanzada) en $150$ escenarios
-\emph{comunes} a todas las configuraciones (\emph{Common Random Numbers}), a
-profundidades $1$ y $2$, para seis vectores de pesos ---por defecto, evolucionado
-por el genético y ``solo HP''--- tanto en la evaluación de cuatro componentes como
-en la de seis (Tabla~\ref{tab:techo}, Figura~\ref{fig:techo}).
+Este es el experimento que cierra el círculo: ¿hasta dónde puede estirarse la
+función de evaluación, y le saca ventaja una más rica de seis componentes a la de
+cuatro? Para averiguarlo enfrentamos al panel (Aleatorio, Básica y Avanzada) en
+$150$ escenarios \emph{idénticos} para todas las configuraciones (\emph{Common
+Random Numbers}), a profundidades $1$ y $2$. Probamos seis vectores de pesos: por
+defecto, el evolucionado por el genético y uno de ``solo HP'', cada uno en sus dos
+versiones, la de cuatro componentes y la de seis (Tabla~\ref{tab:techo},
+Figura~\ref{fig:techo}).
 
 \begin{table}[t]
 \centering\small
@@ -456,123 +449,123 @@ techo ($\sim 64\%$) que solo alcanza ``solo HP'' de cuatro pesos.}
 \label{fig:techo}
 \end{figure}
 
-\paragraph{Hay un techo, y es de cuatro pesos.} Un vector que pondera \emph{solo}
-el HP de equipo alcanza el máximo ($64\%$ a ambas profundidades): el HP acumulado
-domina la decisión en este dominio. El genético de cuatro pesos se acerca
-($56$--$59\%$) y los pesos por defecto quedan $\sim 10$ puntos por debajo. La
-familia de \emph{seis} pesos no llega: su mejor configuración rinde $54\%$, y
-``solo HP'' con seis componentes se desploma a $46.7\%$ ---porque su término de HP
-pondera un $70\%$ el del Pokémon \emph{activo} (volátil) en lugar del de equipo,
-diluyendo justo la señal que más predice la victoria.
+\paragraph{Hay un techo, y es de cuatro pesos.} El máximo lo marca un vector que
+solo atiende al HP de equipo, con un $64\%$ a las dos profundidades: en este dominio
+el HP acumulado manda en la decisión. El genético de cuatro pesos se queda cerca
+($56$ a $59\%$) y los pesos por defecto caen unos diez puntos por debajo. La familia
+de seis pesos, por su parte, ni se asoma a ese techo. Su mejor configuración llega
+al $54\%$, y la versión de ``solo HP'' se hunde hasta el $46.7\%$. El motivo es
+concreto: su término de HP pondera un $70\%$ el del Pokémon activo, que es volátil,
+en lugar del de equipo, y con ello diluye justo la señal que mejor anticipa quién
+gana.
 
 \paragraph{Una evaluación más rica no rompe el techo.} A un solo nivel, la
-Heurística Mejorada (6 componentes) no mejora a la Avanzada (4): $58\%$ vs.\
-$63.3\%$ contra la Básica y $82\%$ vs.\ $87.3\%$ contra el azar, con un empate
-técnico en enfrentamiento directo ($45.3\%$, dentro del ruido) y a un coste
-$\sim 3\times$ por decisión ($0.40$ vs.\ $0.12$\,ms). Y \emph{dentro} del minimax
-con genético tampoco: el Genético-6 no supera al Genético-4 (Experimento~A,
-Figura~\ref{fig:torneo}). De hecho, el propio algoritmo genético \textbf{anula} el
-componente \emph{peligro de ser noqueado} (peso evolucionado $0.002$): la evolución
-``descubre'' que ese componente \emph{duplica} una señal ---la táctica de un
-turno--- que el minimax \emph{ya} resuelve al simular el intercambio. El cuello de
-botella es, por tanto, la \emph{simplicidad del dominio} (daño dominado por el HP,
-sin estados de alteración), no la evaluación ni el optimizador: una buena función
-de evaluación debe \emph{complementar} la búsqueda, no \emph{duplicar} la táctica
-que el árbol ya calcula.
+Heurística Mejorada (6 componentes) tampoco le gana a la Avanzada (4): $58\%$ frente
+a $63.3\%$ contra la Básica, $82\%$ frente a $87.3\%$ contra el azar, un empate
+técnico en su duelo directo ($45.3\%$, dentro del ruido) y, encima, un coste de unas
+tres veces por decisión ($0.40$ frente a $0.12$\,ms). Dentro del minimax con
+genético la historia se repite: el Genético-6 no supera al Genético-4
+(Experimento~A, Figura~\ref{fig:torneo}). Y hay un detalle elocuente: el propio
+algoritmo genético \textbf{apaga} el componente de \emph{peligro de ser noqueado},
+dejándolo en un peso de $0.002$. La evolución, sin que nadie se lo indique, descubre
+que ese componente repite una señal de corto plazo, la táctica de un turno, que el
+minimax ya resuelve al simular el intercambio. El cuello de botella, entonces, no
+está en la evaluación ni en el optimizador, sino en la \emph{simplicidad del propio
+combate}: con un daño dominado por el HP y sin estados de alteración, la mejor
+política es sencilla y todos los agentes informados acaban rondándola. Romper ese
+techo pasaría por enriquecer el \emph{motor}, no la evaluación.
 
 \section{Resultados y Discusión}
 
-\paragraph{Jerarquía de agentes.} El torneo (Figura~\ref{fig:torneo}) sitúa al
-agente aleatorio como el más débil con claridad
-($20.8\%$ global, IC $[17.4,24.7]$): cualquier forma de evaluación lo supera. En
-el otro extremo, la \textbf{Heurística Avanzada es el mejor agente} ($61.5\%$, IC
-$[57.0,65.7]$). El grupo intermedio ---Mejorada ($57.9\%$), Básica ($56.2\%$),
-Genético-4 ($54.4\%$), Genético-6 ($51.9\%$) y Minimax-$d2$ ($47.3\%$)--- tiene
-intervalos que se solapan en buena medida. Dos lecturas destacan: la búsqueda
-(Minimax) no supera a la mejor heurística a un nivel ---lo atribuimos a la
-formulación \emph{paranoid} (sobre-defensiva) y a lo cortas que son las partidas
-(${\sim}12$ turnos)---, y aunque los pesos evolucionados mejoran al minimax de
-pesos por defecto, la evaluación de seis componentes (Genético-6) no aporta sobre
-la de cuatro (Genético-4): su enfrentamiento directo es un empate ($50$--$50$).
+\paragraph{Jerarquía de agentes.} El torneo (Figura~\ref{fig:torneo}) deja al
+agente aleatorio en el último lugar sin discusión ($20.8\%$ global, IC
+$[17.4,24.7]$): basta cualquier forma de evaluación para superarlo. En la cima se
+asienta la \textbf{Heurística Avanzada} ($61.5\%$, IC $[57.0,65.7]$). Por el medio
+se agolpan la Mejorada ($57.9\%$), la Básica ($56.2\%$), el Genético-4 ($54.4\%$),
+el Genético-6 ($51.9\%$) y el Minimax-$d2$ ($47.3\%$), con intervalos que se solapan
+bastante. De aquí salen dos lecturas. La primera, que la búsqueda no le gana a la
+mejor heurística de un nivel; lo achacamos a la formulación \emph{paranoid}, que
+juega a la defensiva, y a lo cortas que son las partidas (unos $12$ turnos). La
+segunda, que evolucionar los pesos sí mejora al minimax de pesos manuales, pero
+pasar de cuatro a seis componentes (Genético-6) no añade nada: su duelo directo con
+el Genético-4 acaba en empate ($50$--$50$).
 
-\paragraph{La búsqueda: la poda paga, la profundidad no.} El resultado más nítido
-y robusto está en el coste de búsqueda (Tabla~\ref{tab:poda},
-Figura~\ref{fig:poda}): el número de nodos crece de forma explosiva con la
-profundidad ($42 \to 743 \to 10\,366$ con poda), y la poda alfa-beta recorta un
-$52\%$ de los nodos en $d{=}2$ y un $81\%$ en $d{=}3$, \emph{sin alterar la
-decisión} \citep{knuth1975}; el ahorro crece justo donde más se necesita. En
-cambio, mirar \emph{más} turnos no compra calidad (Tabla~\ref{tab:depthwin},
-Figura~\ref{fig:depth}): el win-rate frente a la Básica no mejora con la
-profundidad ---si acaso desciende levemente ($51.2\% \to 46.2\% \to 42.5\%$, con
-intervalos que se solapan y abarcan el $50\%$)---, de nuevo por el pesimismo
+\paragraph{La búsqueda: la poda paga, la profundidad no.} El resultado más limpio y
+sólido de todo el trabajo está en el coste de búsqueda (Tabla~\ref{tab:poda},
+Figura~\ref{fig:poda}). El número de nodos se dispara con la profundidad ($42$,
+luego $743$, luego $10\,366$ con poda), y la poda alfa-beta se lleva por delante un
+$52\%$ de ellos en $d{=}2$ y un $81\%$ en $d{=}3$ sin tocar la decisión final
+\citep{knuth1975}; encima ahorra más cuanto más profundo se busca, que es donde de
+verdad hace falta. Mirar más turnos, en cambio, no compra calidad
+(Tabla~\ref{tab:depthwin}, Figura~\ref{fig:depth}): el win-rate frente a la Básica
+no sube con la profundidad y hasta baja un poco ($51.2\%$, $46.2\%$, $42.5\%$), con
+intervalos que se solapan y cruzan el $50\%$. Otra vez asoman el pesimismo
 \emph{paranoid} y la brevedad de las partidas.
 
 \paragraph{El genético optimiza, pero el dominio limita.} El algoritmo genético
-mejora con éxito los pesos del minimax (de los manuales a, p.\,ej.,
-$(0.26,0.33,0.33,0.08)$, triplicando el peso de la ventaja de tipo). Sin embargo,
-diversificar la señal de aptitud \emph{no} ayuda: entrenar el \emph{fitness}
-contra un panel de rivales no generaliza mejor al rival no visto que entrenar
-contra uno solo (Experimento~D, Figura~\ref{fig:panel}) ---un resultado nulo que
-solo se aprecia promediando varias semillas y que es coherente con el límite del
-dominio que describimos a continuación.
+afina bien los pesos del minimax: parte de los manuales y llega, por ejemplo, a
+$(0.26,0.33,0.33,0.08)$, donde triplica el peso de la ventaja de tipo. Lo que el
+dominio no le concede es margen para ir más allá. Diversificar la señal de aptitud
+entrenando contra un panel en vez de contra un solo rival no mejora la
+generalización al oponente no visto (Experimento~D, Figura~\ref{fig:panel}); es un
+resultado nulo que solo se hace visible al promediar varias semillas, y que enlaza
+de lleno con el límite que comentamos a continuación.
 
-\paragraph{Un techo estructural del dominio.} El hallazgo de fondo es un
-\textbf{techo de $\sim$64\%} frente al panel (Tabla~\ref{tab:techo},
-Figura~\ref{fig:techo}): lo alcanza un vector que pondera \emph{solo} el HP de
-equipo, y ni los pesos evolucionados ni una evaluación más rica de seis
-componentes lo superan ---esta última ni a un solo nivel ni dentro del minimax
-con genético (Genético-6). El cuello de botella no es, por
-tanto, la función de evaluación ni el optimizador, sino la \emph{simplicidad del
-propio combate}: con un daño dominado por el diferencial de HP y sin estados de
-alteración, la mejor política es sencilla y todos los agentes informados convergen
-cerca de ella. Superar ese techo exigiría enriquecer el \emph{motor}
-(p.\,ej.\ estados de alteración), no la evaluación.
+\paragraph{Un techo estructural del dominio.} El hallazgo de fondo es un techo de
+en torno al $64\%$ frente al panel (Tabla~\ref{tab:techo}, Figura~\ref{fig:techo}).
+Lo toca un vector que solo mira el HP de equipo, y no lo superan ni los pesos
+evolucionados ni una evaluación de seis componentes, ni a un nivel ni dentro del
+minimax con genético. El cuello de botella, entonces, no es la función de
+evaluación ni el optimizador, sino la \emph{simplicidad del propio combate}: con un
+daño que el HP domina y sin estados de alteración, la política óptima es sencilla y
+todos los agentes informados terminan rondándola. Para subir ese techo habría que
+enriquecer el \emph{motor} (por ejemplo, con estados de alteración), no la
+evaluación.
 
-\paragraph{Amenazas a la validez.} Pese a usar $80$ batallas por par e intervalos
-de confianza, los márgenes siguen siendo de $\pm 5$ puntos, y el daño de
-simulación es un \emph{proxy} determinista del combate real estocástico. La
-formulación \emph{paranoid} es la limitación de modelado más relevante. El
-Experimento~D ilustra además un riesgo metodológico general: una sola corrida
-puede sugerir un efecto que desaparece al promediar semillas.
+\paragraph{Amenazas a la validez.} Aun con $80$ batallas por par e intervalos de
+confianza, los márgenes rondan los $\pm 5$ puntos, y el daño de simulación es un
+\emph{proxy} determinista de un combate que en realidad es estocástico. La
+formulación \emph{paranoid} es la limitación de modelado que más pesa. Y el
+Experimento~D deja, de propina, una advertencia metodológica: una sola corrida puede
+insinuar un efecto que se desvanece en cuanto se promedian semillas.
 
 \section{Conclusiones}
 
-Desarrollamos PokeFisi, un simulador de combates Pokémon que integra una familia
-de agentes de decisión y permite compararlos de forma reproducible. El modelado
-del dominio como un problema de búsqueda adversaria con una función de
-evaluación basada en diferenciales acotados resultó suficientemente expresivo
-para todos los agentes y, al compartirse entre la heurística avanzada, el
-minimax y el genético, facilitó una comparación limpia.
+Desarrollamos PokeFisi, un simulador de combates Pokémon que reúne una familia de
+agentes de decisión y permite compararlos de forma reproducible. Modelar el dominio
+como un problema de búsqueda adversaria, con una evaluación basada en diferenciales
+acotados, resultó lo bastante expresivo para todos los agentes; y como esa misma
+evaluación la comparten la heurística avanzada, el minimax y el genético, la
+comparación salió limpia.
 
-Los experimentos arrojan conclusiones matizadas. El azar es claramente la línea
-base; la \emph{Heurística Avanzada} bien calibrada fue el agente más fuerte, por
-encima incluso del minimax: su formulación \emph{paranoid} y la corta duración de
-las partidas hacen que anticipar turnos aporte poco frente a una buena evaluación
-a un nivel ---y, de hecho, aumentar la profundidad no mejora el win-rate. La poda
-alfa-beta, en cambio, se reveló inequívocamente útil, reduciendo los nodos
-explorados hasta un $81\%$ sin cambiar la decisión y haciendo asequibles las
-profundidades mayores.
+De los experimentos se desprenden conclusiones con matices. El azar es la línea
+base, sin más. La \emph{Heurística Avanzada} bien calibrada fue el agente más
+fuerte, por delante incluso del minimax: su formulación \emph{paranoid} y lo breves
+que son las partidas hacen que anticipar turnos rinda poco frente a una buena
+evaluación de un nivel, y de hecho subir la profundidad no mejora el win-rate. La
+poda alfa-beta, en cambio, fue una victoria sin peros: recorta hasta el $81\%$ de
+los nodos sin cambiar la decisión y pone al alcance las profundidades mayores.
 
-El algoritmo genético optimizó con éxito los pesos del minimax, pero el dominio
-acota lo que ese aprendizaje puede lograr. Diversificar la señal de aptitud
----entrenar contra un panel de rivales en lugar de uno solo--- no mejoró la
-generalización (un resultado nulo que solo emerge al promediar varias semillas), y
-dejar que el genético optimice una evaluación \emph{más rica} de seis componentes
-en lugar de cuatro tampoco ayudó: el Genético-6 quedó por debajo del Genético-4
-(Figura~\ref{fig:torneo}) y la propia evolución llegó a anular los componentes
-tácticos que la búsqueda ya cubre. Todo apunta a un \textbf{techo estructural}
-($\sim$64\%) propio del dominio: con un daño dominado por el HP y sin estados de
-alteración, el combate admite una política óptima sencilla a la que todos los
-agentes informados se aproximan. La lección es general: una evaluación útil debe
-\emph{complementar} a la búsqueda, no \emph{duplicarla}; y superar el techo exige
-enriquecer el \emph{motor}, no la evaluación ni el optimizador.
+El genético optimizó con éxito los pesos del minimax, pero el dominio acota lo que
+ese aprendizaje da de sí. Diversificar la señal de aptitud, entrenando contra un
+panel en lugar de contra un solo rival, no mejoró la generalización (un nulo que
+solo se aprecia al promediar semillas); y dejar que el genético afinara una
+evaluación más rica de seis componentes tampoco ayudó: el Genético-6 quedó por
+debajo del Genético-4 (Figura~\ref{fig:torneo}) y la propia evolución terminó
+apagando los componentes que la búsqueda ya cubría. Todo converge en un mismo punto:
+un \textbf{techo estructural} cercano al $64\%$ que es del dominio, no de los
+algoritmos. Con un daño dominado por el HP y sin estados de alteración, el combate
+admite una política óptima sencilla a la que todos los agentes informados se
+aproximan. Y la moraleja va más allá de Pokémon: una evaluación útil complementa a
+la búsqueda en vez de repetirla, y para mover el techo hay que enriquecer el
+\emph{motor}, no la evaluación ni el optimizador.
 
-Como trabajo futuro proponemos resolver los nodos como juegos de matriz con
-equilibrios de estrategia \emph{mixta} (en lugar de la formulación \emph{paranoid});
-usar \emph{auto-juego} coevolutivo para el genético; ampliar los tamaños de muestra
-para estrechar los intervalos de confianza; y, sobre todo, enriquecer el modelo con
-estados de alteración y mayor estocasticidad ---la vía para superar el techo del
-dominio.
+De cara al futuro quedan varias puertas abiertas: resolver los nodos como juegos de
+matriz con equilibrios de estrategia \emph{mixta}, en lugar de la formulación
+\emph{paranoid}; entrenar el genético por \emph{auto-juego} coevolutivo; ampliar las
+muestras para estrechar los intervalos de confianza; y, sobre todo, enriquecer el
+modelo con estados de alteración y más azar, que es seguramente la única forma de
+mover el techo del dominio.
 
 % acl.sty ya define \bibliographystyle{acl_natbib}, no hay que repetirlo.
 \bibliography{custom}
