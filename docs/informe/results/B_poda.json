@@ -1,0 +1,26 @@
+{
+  "cost": {
+    "1": {
+      "nodos_poda": 42.0,
+      "nodos_full": 42.0,
+      "reduccion": 0.0,
+      "ms_eval4": 0.65,
+      "ms_eval6": 1.4
+    },
+    "2": {
+      "nodos_poda": 742.9,
+      "nodos_full": 1549.0,
+      "reduccion": 52.0,
+      "ms_eval4": 10.29,
+      "ms_eval6": 32.04
+    },
+    "3": {
+      "nodos_poda": 10366.3,
+      "nodos_full": 55017.7,
+      "reduccion": 81.2,
+      "ms_eval4": 135.83,
+      "ms_eval6": 460.71
+    }
+  },
+  "n_pos": 40
+}

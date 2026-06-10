@@ -1,33 +1,6 @@
 {
-  "E1_robustez": {
-    "sin_inmigrantes": {
-      "runs": [
-        50.0,
-        54.7,
-        50.0,
-        50.0,
-        50.0
-      ],
-      "min": 50.0,
-      "mean": 50.9,
-      "max": 54.7
-    },
-    "con_inmigrantes": {
-      "runs": [
-        54.0,
-        56.0,
-        54.0,
-        56.0,
-        54.0
-      ],
-      "min": 54.0,
-      "mean": 54.8,
-      "max": 56.0
-    },
-    "n_test": 150
-  },
-  "E2_techo": {
-    "n_test": 150,
+  "n_test": 150,
+  "techo": {
     "default-4": {
       "weights": [
         0.4,
@@ -95,7 +68,7 @@
       "d2": 49.3
     }
   },
-  "E3_avanzada_vs_mejorada": {
+  "avz_vs_mej": {
     "avanzada": {
       "vs_basica": 63.3,
       "vs_random": 87.3,
@@ -104,9 +77,8 @@
     "mejorada": {
       "vs_basica": 58.0,
       "vs_random": 82.0,
-      "ms_dec": 0.37
+      "ms_dec": 0.4
     },
-    "mejorada_vs_avanzada_h2h": 45.3,
-    "n": 150
+    "mejorada_vs_avanzada_h2h": 45.3
   }
 }

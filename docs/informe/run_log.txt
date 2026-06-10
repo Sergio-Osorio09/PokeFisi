@@ -1,0 +1,72 @@
+
+=== Entrenamiento de los genéticos (4 vs 6 pesos) ===
+  AG-4 pesos=[0.262, 0.334, 0.326, 0.078] wr_train=75.0% [45s]
+  AG-6 pesos=[0.199, 0.174, 0.178, 0.002, 0.136, 0.31] wr_train=75.0% [84s]
+  -> results\entrenamiento.json
+
+=== A: torneo de 7 agentes (80 batallas por par) ===
+  Random      vs H.Basica   :  16.2%  turnos~12.2
+  Random      vs H.Avanzada :  12.5%  turnos~12.4
+  Random      vs H.Mejorada :  17.5%  turnos~10.6
+  Random      vs Minimax-d2 :  31.2%  turnos~13.8
+  Random      vs Genetico-4 :  26.2%  turnos~13.4
+  Random      vs Genetico-6 :  21.2%  turnos~13.4
+  H.Basica    vs H.Avanzada :  46.2%  turnos~10.3
+  H.Basica    vs H.Mejorada :  46.2%  turnos~10.6
+  H.Basica    vs Minimax-d2 :  60.0%  turnos~10.6
+  H.Basica    vs Genetico-4 :  50.0%  turnos~10.8
+  H.Basica    vs Genetico-6 :  51.2%  turnos~10.6
+  H.Avanzada  vs H.Mejorada :  55.0%  turnos~10.3
+  H.Avanzada  vs Minimax-d2 :  55.0%  turnos~12.4
+  H.Avanzada  vs Genetico-4 :  56.2%  turnos~10.2
+  H.Avanzada  vs Genetico-6 :  61.3%  turnos~10.5
+  H.Mejorada  vs Minimax-d2 :  60.0%  turnos~10.2
+  H.Mejorada  vs Genetico-4 :  50.0%  turnos~ 9.1
+  H.Mejorada  vs Genetico-6 :  56.2%  turnos~10.6
+  Minimax-d2  vs Genetico-4 :  41.2%  turnos~12.9
+  Minimax-d2  vs Genetico-6 :  48.8%  turnos~15.8
+  Genetico-4  vs Genetico-6 :  50.0%  turnos~15.0
+  Global: {'Random': 20.8, 'H.Basica': 56.2, 'H.Avanzada': 61.5, 'H.Mejorada': 57.9, 'Minimax-d2': 47.3, 'Genetico-4': 54.4, 'Genetico-6': 51.9}
+  -> results\A_torneo.json
+  -> figura figA_torneo.png/.pdf
+
+=== B: poda alfa-beta (coste sobre 40 posiciones) ===
+  d=1: poda=42.0 full=42.0 reduc=0.0%  ms4=0.65 ms6=1.4
+  d=2: poda=742.9 full=1549.0 reduc=52.0%  ms4=10.29 ms6=32.04
+  d=3: poda=10366.3 full=55017.7 reduc=81.2%  ms4=135.83 ms6=460.71
+  -> results\B_poda.json
+  -> figura figB_poda.png/.pdf
+
+=== C: profundidad y calidad (80 batallas por profundidad) ===
+  Minimax d=1 vs Basica: 51.2% CI(40.5, 61.9) turnos~10.2
+  Minimax d=2 vs Basica: 46.2% CI(35.7, 57.1) turnos~10.8
+  Minimax d=3 vs Basica: 42.5% CI(32.3, 53.4) turnos~10.4
+  -> results\C_profundidad.json
+  -> figura figC_profundidad.png/.pdf
+
+=== D: sobreajuste del genético, 1 rival vs panel (5 semillas, 60 bat/rival) ===
+  semilla 7: single vs Mmx=61.7% panel vs Mmx=50.0%
+  semilla 11: single vs Mmx=55.0% panel vs Mmx=65.0%
+  semilla 17: single vs Mmx=63.3% panel vs Mmx=58.3%
+  semilla 23: single vs Mmx=56.7% panel vs Mmx=60.0%
+  semilla 31: single vs Mmx=61.7% panel vs Mmx=41.7%
+  SINGLE: {'Random': {'mean': 79.3, 'std': 3.6}, 'Basica': {'mean': 50.7, 'std': 2.7}, 'Avanzada': {'mean': 38.0, 'std': 4.4}, 'Minimax-d2': {'mean': 59.7, 'std': 3.2}, 'GLOBAL': {'mean': 56.9, 'std': 15.5}}
+  PANEL : {'Random': {'mean': 80.0, 'std': 2.8}, 'Basica': {'mean': 47.7, 'std': 4.0}, 'Avanzada': {'mean': 38.7, 'std': 3.7}, 'Minimax-d2': {'mean': 55.0, 'std': 8.2}, 'GLOBAL': {'mean': 55.3, 'std': 16.2}}
+  -> results\D_panel.json
+  -> figura figD_panel.png/.pdf
+
+=== E: techo de la evaluación, 4 vs 6 pesos (150 escenarios) ===
+  default-4    d1=54.0%  d2=54.7%
+  genetico-4   d1=59.3%  d2=56.0%
+  soloHP-4     d1=64.0%  d2=64.0%
+  default-6    d1=48.7%  d2=54.0%
+  genetico-6   d1=54.0%  d2=51.3%
+  soloHP-6     d1=46.7%  d2=49.3%
+  Avanzada(4): {'vs_basica': 63.3, 'vs_random': 87.3, 'ms_dec': 0.12}
+  Mejorada(6): {'vs_basica': 58.0, 'vs_random': 82.0, 'ms_dec': 0.4}
+  Mejorada vs Avanzada (h2h): 45.3%
+  -> results\E_techo.json
+  -> figura figE_techo.png/.pdf
+  -> results\results.json
+
+TOTAL: 16.7 min. Resultados en results/ y figuras en figs/.

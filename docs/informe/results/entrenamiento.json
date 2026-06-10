@@ -1,0 +1,34 @@
+{
+  "config": {
+    "pop_size": 16,
+    "generations": 15,
+    "battles_per_eval": 24,
+    "minimax_depth": 2,
+    "train_depth": 1,
+    "immigrants": 2,
+    "truncation": 0.4,
+    "mutation_rate": 0.2,
+    "mutation_strength": 0.15,
+    "seed": 3
+  },
+  "ag4": {
+    "weights": [
+      0.2617,
+      0.3341,
+      0.3261,
+      0.0781
+    ],
+    "wr_train": 0.75
+  },
+  "ag6": {
+    "weights": [
+      0.1995,
+      0.1744,
+      0.1782,
+      0.0016,
+      0.136,
+      0.3102
+    ],
+    "wr_train": 0.75
+  }
+}

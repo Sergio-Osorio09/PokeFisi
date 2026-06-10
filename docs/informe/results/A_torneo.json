@@ -1,0 +1,53 @@
+{
+  "names": [
+    "Random",
+    "H.Basica",
+    "H.Avanzada",
+    "H.Mejorada",
+    "Minimax-d2",
+    "Genetico-4",
+    "Genetico-6"
+  ],
+  "overall": {
+    "Random": 20.8,
+    "H.Basica": 56.2,
+    "H.Avanzada": 61.5,
+    "H.Mejorada": 57.9,
+    "Minimax-d2": 47.3,
+    "Genetico-4": 54.4,
+    "Genetico-6": 51.9
+  },
+  "ci": {
+    "Random": [
+      17.4,
+      24.7
+    ],
+    "H.Basica": [
+      51.8,
+      60.6
+    ],
+    "H.Avanzada": [
+      57.0,
+      65.7
+    ],
+    "H.Mejorada": [
+      53.5,
+      62.3
+    ],
+    "Minimax-d2": [
+      42.9,
+      51.8
+    ],
+    "Genetico-4": [
+      49.9,
+      58.8
+    ],
+    "Genetico-6": [
+      47.4,
+      56.3
+    ]
+  },
+  "n": 80,
+  "avg_turns": 11.7,
+  "draw_rate": 0.0
+}
