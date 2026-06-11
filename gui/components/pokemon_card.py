@@ -1,6 +1,7 @@
 import pygame
 from config import WHITE, DARK, BLACK
 from gui.assets_loader import get_font, get_pokemon_image, get_type_color
+from engine.pokemon import battle_stats
 
 
 class PokemonCard:
@@ -48,8 +49,8 @@ class PokemonCard:
         ty_surf = self.font_type.render(ty, True, type_color)
         surface.blit(ty_surf, ty_surf.get_rect(centerx=self.rect.centerx, top=self.rect.y + 78))
 
-        # Stats mini
-        s = p["stats"]
+        # Stats mini (nivel 100: los mismos valores con los que se combate)
+        s = battle_stats(p["stats"])
         stats_text = f"HP:{s['hp']} A:{s['attack']} D:{s['defense']}"
         st_surf = self.font_stat.render(stats_text, True, (180, 180, 180))
         surface.blit(st_surf, st_surf.get_rect(centerx=self.rect.centerx, top=self.rect.y + 92))

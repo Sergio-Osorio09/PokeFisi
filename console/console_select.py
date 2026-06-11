@@ -1,5 +1,6 @@
 import json
 from engine.loader import load_all_pokemon
+from engine.pokemon import battle_stats
 from ai.registry import build_registry
 
 
@@ -9,7 +10,7 @@ def show_pokemon_table(pokemon_list: list[dict]):
     print("-" * 62)
     for p in pokemon_list:
         types = "/".join(p["types"])
-        s = p["stats"]
+        s = battle_stats(p["stats"])
         print(
             f"  {p['id']:<4} {p['name']:<14} {types:<18} "
             f"{s['hp']:>4} {s['attack']:>4} {s['defense']:>4} {s['speed']:>4}"

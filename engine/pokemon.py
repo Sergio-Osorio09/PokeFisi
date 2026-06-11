@@ -2,6 +2,20 @@ import random
 from engine.move import Move
 
 
+def battle_stats(stats: dict) -> dict:
+    """Estadisticas reales de combate (nivel 100) a partir de las base del JSON.
+
+    Fuente unica de la formula: la usan tanto el combate (Pokemon.__init__)
+    como las pantallas de seleccion, para que siempre coincidan.
+    """
+    return {
+        "hp":      2 * stats["hp"]      + 110,
+        "attack":  2 * stats["attack"]  + 5,
+        "defense": 2 * stats["defense"] + 5,
+        "speed":   2 * stats["speed"]   + 5,
+    }
+
+
 class Pokemon:
     def __init__(self, data: dict, all_moves: dict):
         self.id = data["id"]
@@ -10,12 +24,12 @@ class Pokemon:
         self.image      = data.get("image", "")
         self.image_back = data.get("image_back", "")
 
-        stats = data["stats"]
-        self.max_hp  = 2 * stats["hp"]      + 110
+        bs = battle_stats(data["stats"])
+        self.max_hp  = bs["hp"]
         self.current_hp = self.max_hp
-        self.attack  = 2 * stats["attack"]  + 5
-        self.defense = 2 * stats["defense"] + 5
-        self.speed   = 2 * stats["speed"]   + 5
+        self.attack  = bs["attack"]
+        self.defense = bs["defense"]
+        self.speed   = bs["speed"]
 
         move_ids = data["move_ids"]
         available = [all_moves[mid] for mid in move_ids if mid in all_moves]
