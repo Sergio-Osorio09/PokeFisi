@@ -294,6 +294,8 @@ class BattleScreen:
         if self.mode == "human_vs_ai" and not self.finished:
             for btn in self.move_buttons:
                 btn.draw(surface)
+            if self.switch_btn:
+                self.switch_btn.draw(surface)
 
         if self.mode == "ai_vs_ai" and not self.finished:
             self._btn_pause.text  = "REANUDAR" if self._paused else "PAUSAR"
@@ -302,7 +304,6 @@ class BattleScreen:
 
         if self._paused:
             self._draw_paused_overlay(surface)
-            self.switch_btn.draw(surface)
 
         if self.finished:
             self._draw_winner(surface)
