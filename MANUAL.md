@@ -19,6 +19,8 @@
 11. [Arquitectura del código](#11-arquitectura-del-código)
 12. [Flujo completo de una batalla](#12-flujo-completo-de-una-batalla)
 13. [Estrategias recomendadas](#13-estrategias-recomendadas)
+14. [El panel cerebro — cómo leer el razonamiento de la IA](#14-el-panel-cerebro--cómo-leer-el-razonamiento-de-la-ia)
+15. [Comandos del juego y funciones que los implementan](#15-comandos-del-juego-y-funciones-que-los-implementan)
 
 ---
 
@@ -993,6 +995,161 @@ Depende de cómo resultaron sus pesos. Observa los pesos en la pantalla de selec
 - Snorlax (11) — Normal, HP=160, el tanque definitivo
 - Slowbro (29) — Water/Psychic, DEF=110
 - Rhydon (17) — Ground/Rock, DEF=120
+
+---
+
+## 14. El panel cerebro — cómo leer el razonamiento de la IA
+
+El **panel cerebro** (la caja oscura que aparece en la columna derecha del campo cuando un jugador es controlado por una IA) muestra **en tiempo real qué está "pensando" el agente** en el turno actual. No es decoración: refleja exactamente las acciones que el agente evaluó y la puntuación que le dio a cada una. Entenderlo permite verificar que la IA decide como esperamos y explicar su comportamiento.
+
+### 14.1. Arquitectura: dos capas desacopladas
+
+El panel funciona en **dos capas independientes** que se comunican por un único atributo, `last_brain_data`:
+
+1. **El agente calcula y guarda su razonamiento.** Cada agente, dentro de su `choose_action`, evalúa todas las acciones posibles y deja el resultado en `self.last_brain_data` (un diccionario). No dibuja nada.
+2. **La GUI dibuja lo que el agente dejó.** El método `_draw_brain_panel` de `gui/screens/battle_screen.py` lee `agent.last_brain_data` y lo pinta. No recalcula nada.
+
+```python
+# gui/screens/battle_screen.py  (método _draw_brain_panel)
+data = getattr(agent, "last_brain_data", None)
+if data is None:
+    # aún no ha jugado: "Esperando primer turno..."
+    ...
+for ev in data["evaluations"]:      # una fila por acción evaluada
+    # nombre, barra de daño, "XHP rival:Y%", score, y resaltado si fue la elegida
+    ...
+```
+
+La gran ventaja de este diseño: **el mismo panel sirve para los 6 agentes**. Cada uno rellena su propio diccionario con su fórmula y, si tiene datos extra (componentes, nodos, pesos), el panel los muestra automáticamente al pie.
+
+### 14.2. Anatomía del diccionario `last_brain_data`
+
+| Clave | Contenido | Qué agentes la rellenan |
+|---|---|---|
+| `formula` | Texto de la fórmula de evaluación que se muestra bajo el nombre del agente | Todos |
+| `evaluations` | Lista con una entrada por acción posible (ver abajo) | Todos |
+| `components` *(dentro de cada evaluación)* | Desglose por componente de la acción elegida | Heurística Avanzada y Mejorada |
+| `stats` | `nodos`, `podas`, `depth`, `ms` de la búsqueda | Minimax y Genético |
+| `pv` | Variante principal: mi mejor acción → mejor réplica del rival | Minimax y Genético |
+| `weights` | Pesos aprendidos frente a los de base | Genético |
+
+Cada elemento de `evaluations` es un diccionario con estos campos:
+
+| Campo | Significado |
+|---|---|
+| `name` | Nombre de la acción: el movimiento (`Fire Blast`) o el cambio (`-> Gengar`) |
+| `damage` | Daño inmediato que haría ese movimiento (0 en los cambios) |
+| `opp_hp_after` | HP del rival tras recibir ese daño |
+| `opp_max_hp` | HP máximo del rival (para calcular el porcentaje y la barra) |
+| `score` | Puntuación que la función de evaluación asigna a la acción |
+| `chosen` | `True` solo en la acción finalmente elegida (la marcada con `*`) |
+
+### 14.3. Cómo leer cada fila
+
+Cada fila del panel representa **una acción evaluada** y muestra cuatro cosas:
+
+```
+* -> Magmar            ▮▯▯▯▯▯▯▯   0 HP  rival:100%        -0.45
+└─ acción (chosen=*)   └ barra    └ daño y % HP rival     └ score
+```
+
+| Elemento visual | De dónde sale | Cómo interpretarlo |
+|---|---|---|
+| Nombre + `*` + resaltado | `name`, `chosen` | El `*` y el fondo azul marcan la acción elegida (la de mayor `score`) |
+| Barra roja | `damage / opp_max_hp` | Proporción de daño del golpe respecto al HP rival |
+| `147HP rival:51%` | `damage`, `opp_hp_after` | Daño infligido y HP que le quedaría al rival (verde >50 %, amarillo 25-50 %, rojo <25 %) |
+| `+0.02` / `-1.00` | `score` | Valor de la acción para el agente (verde si ≥ 0, rojo si < 0) |
+
+> **Distinción clave — barra ≠ score.** La barra y el texto `XHP rival:Y%` son el **daño inmediato** del movimiento. El número de la derecha es el **valor de la evaluación**, que en el Minimax/Genético es el resultado de mirar varios turnos hacia delante. Por eso una acción puede hacer poco daño inmediato pero tener mejor score (o al revés). En las capturas de ejemplo, todos los ataques de Pikachu contra Snorlax valían `-0.47`, pero **cambiar a Magmar** (`-0.45`) era la opción menos mala, así que el Genético cambió de Pokémon en lugar de atacar.
+
+### 14.4. Datos extra del Minimax y el Genético
+
+Cuando el agente es de búsqueda, debajo de las filas aparecen líneas adicionales:
+
+```
+nodos:3182  podas a-b:689  d=3  40ms
+yo: Magmar  ->  rival: Hyper Beam
+pesos: superv 0.24  hp 0.47  tipo 0.29  vel 0.01
+```
+
+| Línea | Origen | Significado |
+|---|---|---|
+| `nodos:3182` | `stats["nodos"]` | Estados del árbol explorados en esta decisión |
+| `podas a-b:689` | `stats["podas"]` | Ramas cortadas por la poda alfa-beta (cuantas más, más ahorro) |
+| `d=3  40ms` | `stats["depth"]`, `stats["ms"]` | Profundidad de búsqueda y tiempo de cómputo |
+| `yo: … -> rival: …` | `pv` (`_principal_variation`) | La **variante principal**: la mejor jugada propia y la mejor réplica que el agente anticipa del rival |
+| `pesos: …` | `weights` | Los pesos **evolucionados** de la evaluación (solo el Genético) |
+
+La variante principal la calcula el método `_principal_variation` de `ai/minimax_agent.py`, que tras fijar la mejor acción propia busca la respuesta del rival que minimiza la evaluación. Es la forma de "ver" qué intercambio está anticipando el agente.
+
+### 14.5. Dónde se genera el panel, agente por agente
+
+| Agente | Archivo donde rellena `last_brain_data` | Extras que añade |
+|---|---|---|
+| Heurística Básica | `ai/heuristic_basic.py` | `formula = "score = HP_propio% - HP_rival%"` |
+| Heurística Avanzada | `ai/heuristic_advanced.py` | fórmula de 4 pesos + `components` |
+| Heurística Mejorada | `ai/heuristic_improved.py` | fórmula de 6 componentes + `components` |
+| Minimax | `ai/minimax_agent.py` | `stats` (nodos, podas, ms) + `pv` |
+| Genético | `ai/genetic_agent.py` | lo del Minimax + `weights` |
+| Expectimax | `ai/expectimax_agent.py` | `formula` indicando el modelo de rival usado |
+
+El Agente Aleatorio no rellena el panel (no evalúa nada), por lo que se muestra `Esperando primer turno...` mientras no haya datos.
+
+---
+
+## 15. Comandos del juego y funciones que los implementan
+
+Esta sección mapea **cada acción que realiza el jugador** con la función y el archivo que la hacen posible. Sirve como referencia rápida para localizar el código detrás de cada elemento de la interfaz.
+
+### 15.1. Las acciones del jugador
+
+En cualquier turno, un jugador solo puede hacer dos cosas, y ambas se representan siempre con el mismo formato de diccionario:
+
+```python
+{"type": "move",   "move_index": 0-3}   # atacar con uno de los 4 movimientos
+{"type": "switch", "pokemon_index": 0-N} # cambiar al Pokémon de esa posición
+```
+
+Este es el "lenguaje" común que entienden el motor (`engine/battle.py`) y todos los agentes (`ai/`). Tanto un humano haciendo clic como una IA razonando acaban produciendo uno de estos dos diccionarios.
+
+La lista de acciones legales en un momento dado la genera `_possible_actions` en `ai/base_agent.py`: añade un `move` por cada movimiento disponible del Pokémon activo y un `switch` por cada Pokémon vivo del banco que no sea el activo.
+
+### 15.2. Comandos en la GUI (modo Humano vs IA)
+
+| Comando en pantalla | Cómo se activa | Función / clase que lo implementa | Acción que produce |
+|---|---|---|---|
+| Botón de movimiento (`Aqua Tail`, etc.) | Clic en la tarjeta del ataque | clase `MoveButton` en `gui/screens/battle_screen.py` | `{"type": "move", "move_index": i}` |
+| Botón **CAMBIAR POKEMON** | Clic en el botón morado bajo los movimientos | clase `SwitchButton` → abre el selector | inicia `_try_switch()` |
+| Selector "¿A qué Pokémon cambiar?" | Clic en el Pokémon deseado | `_draw_switch_picker` + `_handle_picker_event` | `{"type": "switch", "pokemon_index": idx}` |
+
+Cada tarjeta de movimiento muestra tres datos del objeto `Move`: el **tipo** (badge de color), el **Poder Base** (`BP`) y la **Precisión** (`Acc`). Son los mismos campos descritos en la [sección 6](#6-los-movimientos-y-sus-estadísticas).
+
+### 15.3. Comandos en la GUI (modo IA vs IA)
+
+| Comando | Cómo se activa | Efecto |
+|---|---|---|
+| **PAUSAR / REANUDAR** | Clic en el botón o tecla `Espacio` | Detiene o reanuda el avance automático de turnos |
+
+En este modo los botones de acción están deshabilitados: las decisiones las toman los agentes y solo se observa la batalla (con la pausa de `AI_TURN_DELAY` ms entre turnos definida en `config.py`).
+
+### 15.4. Comandos en el modo Consola
+
+Durante la batalla por consola, cada acción es un número que se escribe y se confirma con `Enter`. Los números `1-4` corresponden a los movimientos y el siguiente a cambiar de Pokémon; la lectura y validación se hacen en `console/console_battle.py`, que traduce el número al mismo diccionario `{"type": ...}`.
+
+### 15.5. Mapa rápido de funciones clave
+
+| Quiero entender… | Función | Archivo |
+|---|---|---|
+| Qué estadísticas reales tiene un Pokémon (nivel 100) | `battle_stats()` + constructor de `Pokemon` | `engine/pokemon.py` |
+| Cómo se calcula el daño de un golpe | `calculate_damage()` | `engine/damage.py` |
+| Cómo se resuelven las ventajas de tipo | `get_type_multiplier()` + `TYPE_CHART` | `engine/damage.py` |
+| Qué acciones puede tomar un agente | `_possible_actions()` | `ai/base_agent.py` |
+| Cómo decide una heurística | `choose_action()` + `_evaluate()` | `ai/heuristic_*.py` |
+| Cómo razona la búsqueda adversaria | `_minimax()`, `_evaluate()`, `_principal_variation()` | `ai/minimax_agent.py` |
+| Cómo se ejecuta un turno completo | `step()` | `engine/battle.py` |
+| Cómo se dibuja el razonamiento de la IA | `_draw_brain_panel()` | `gui/screens/battle_screen.py` |
+
+> Para el detalle de un turno (orden por velocidad, ejecución y reemplazo automático) consulta la [sección 12](#12-flujo-completo-de-una-batalla); para la lógica interna de cada agente, la [sección 9](#9-inteligencia-artificial--los-agentes).
 
 ---
 
